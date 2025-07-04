@@ -1,0 +1,102 @@
+body {
+  margin: 0;
+  overflow: scroll;
+  font-family: sans-serif;
+}
+
+/* Botón fijo */
+#btnNota {
+  position: fixed;
+  bottom: 2vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 0.8em 1.4em;
+  font-size: 1rem;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Popup */
+#popupNota {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-content {
+  background: white;
+  padding: 2em;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+}
+
+#cerrarPopup {
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  background: transparent;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+}
+
+form input, form textarea, form button {
+  width: 100%;
+  margin-top: 1em;
+  padding: 0.8em;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+form button {
+  background: black;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/*
+.punto-nota {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: red;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1;
+}*/
+
+.punto-nota {
+  position: absolute;
+  min-width: 100px;
+  padding: 0.4em 0.8em;
+  background: hsl(var(--h), 90%, 85%);
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+  z-index: 1;
+  animation: flotar 3s ease-in-out infinite;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+@keyframes flotar {
+  0% { transform: translate(-50%, -50%) translateY(0); }
+  50% { transform: translate(-50%, -50%) translateY(-5px); }
+  100% { transform: translate(-50%, -50%) translateY(0); }
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notas Seguras</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- 🌌 Espacio gigante -->
+  <div id="canvas" style="width:1000vw; height:1000vh;"></div>
+
+  <!-- 🔘 Botón fijo para abrir popup -->
+  <button id="btnNota">dejar nota</button>
+
+  <!-- 📝 Popup -->
+  <div id="popupNota">
+    <div class="popup-content">
+      <button id="cerrarPopup">✕</button>
+      <form id="formNota">
+        <input type="text" name="nombre" placeholder="Tu nombre" required />
+        <input type="password" name="clave" placeholder="Contraseña" required />
+        <textarea name="mensaje" placeholder="Tu mensaje" required></textarea>
+        <button type="submit">Enviar</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+  <script>
+    // Centra la vista al cargar
+    window.scrollTo({
+      top: window.innerHeight * 4.5,
+      left: window.innerWidth * 4.5,
+      behavior: "instant"
+    });
+  </script>
+</body>
+</html>
