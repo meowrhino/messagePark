@@ -1,3 +1,5 @@
+const API_URL = "https://messagepark.onrender.com"; // tu backend real
+
 // Mostrar y ocultar el popup
 const btnAbrir = document.getElementById("btnNota");
 const popup = document.getElementById("popupNota");
@@ -6,7 +8,6 @@ const cerrarPopup = document.getElementById("cerrarPopup");
 btnAbrir.addEventListener("click", () => popup.style.display = "block");
 cerrarPopup.addEventListener("click", () => popup.style.display = "none");
 
-// Manejar envío del formulario
 document.getElementById("formNota").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -17,7 +18,7 @@ document.getElementById("formNota").addEventListener("submit", async (e) => {
   const coordenadas = { x: window.scrollX, y: window.scrollY };
   const cifrado = await cifrarMensaje(mensaje, clave);
 
-  await fetch("/nota", {
+  await fetch(`${API_URL}/nota`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ nombre, ...cifrado, coordenadas })
