@@ -22,15 +22,14 @@ body {
 
 /* Popup */
 #popupNota {
-  display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 2000;
-  display: flex;
-  align-items: flex-end; /* 👈 antes era center */
+  align-items: flex-end;
   justify-content: center;
-  padding-bottom: 10vh; /* opcional para más espacio */
+  padding-bottom: 10vh;
+  display: none; /* solo una vez, al final */
 }
 
 .popup-content {
