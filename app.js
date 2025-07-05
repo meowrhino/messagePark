@@ -1,32 +1,75 @@
+import { API_URL } from "./api.js";
 
+// Función para convertir hex a ArrayBuffer
+function hexToBuffer(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return bytes.buffer;
+}
+
+// Desencriptar mensaje
+async function descifrarMensaje(cifrado, claveTexto, saltHex, ivHex) {
+  const encoder = new TextEncoder();
+  const salt = hexToBuffer(saltHex);
+  const iv = hexToBuffer(ivHex);
+
+  const claveBase = await crypto.subtle.importKey(
+    "raw", encoder.encode(claveTexto),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+
+  const claveAES = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    claveBase,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+
+  try {
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      claveAES,
+      hexToBuffer(cifrado)
+    );
+
+    return new TextDecoder().decode(decrypted);
+  } catch (e) {
+    alert("❌ Contraseña incorrecta o mensaje dañado");
+    return null;
+  }
+}
+
+// Mostrar notas
 window.addEventListener("DOMContentLoaded", async () => {
   const res = await fetch(`${API_URL}/notas`);
   const notas = await res.json();
 
-  notas.forEach((nota) => {
-    const punto = document.createElement("div");
-    punto.className = "punto-nota";
-    punto.style.left = nota.coordenadas.x + "px";
-    punto.style.top = nota.coordenadas.y + "px";
+  const canvas = document.getElementById("canvas");
 
-    const hue = Math.floor(Math.random() * 360);
-    punto.style.setProperty("--h", hue);
+  notas.forEach(nota => {
+    const div = document.createElement("div");
+    div.className = "nota";
+    div.style.left = `${nota.coordenadas.x}px`;
+    div.style.top = `${nota.coordenadas.y}px`;
+    div.textContent = `💌 ${nota.nombre}`;
 
-    punto.textContent = nota.nombre;
-
-    punto.addEventListener("click", () => {
-      const clave = prompt("Introduce la contraseña para ver la nota:");
-      if (clave) {
-        descifrarMensaje(nota, clave).then((mensajeDescifrado) => {
-          if (mensajeDescifrado) {
-            alert(`📝 Nota de ${nota.nombre}:\n\n${mensajeDescifrado}`);
-          } else {
-            alert("❌ Contraseña incorrecta o mensaje ilegible");
-          }
-        });
-      }
+    div.addEventListener("click", async () => {
+      const clave = prompt(`Introduce la contraseña para leer el mensaje de ${nota.nombre}:`);
+      if (!clave) return;
+      const mensaje = await descifrarMensaje(nota.mensaje, clave, nota.salt, nota.iv);
+      if (mensaje) alert(`📩 Mensaje de ${nota.nombre}:\n\n${mensaje}`);
     });
 
-    document.body.appendChild(punto);
+    canvas.appendChild(div);
   });
 });

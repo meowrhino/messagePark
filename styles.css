@@ -111,3 +111,19 @@ form button {
   pointer-events: none;
   z-index: 500;
 }
+
+.nota {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #000;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  max-width: 200px;
+  word-wrap: break-word;
+  transition: transform 0.2s;
+}
+.nota:hover {
+  transform: scale(1.05);
+}
