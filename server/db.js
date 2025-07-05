@@ -2,7 +2,11 @@ const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
 const dbPath = path.join(__dirname, "notas.db");
+console.log("Ruta a la base de datos:", dbPath); // Añade exactamente esto aquí 👈🏻
+
 const db = new sqlite3.Database(dbPath);
+
+// resto del archivo...
 
 // Crear tabla si no existe
 db.serialize(() => {
