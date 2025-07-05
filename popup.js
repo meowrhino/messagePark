@@ -1,73 +1,60 @@
+// popup.js
+import { guardarNota } from "./api.js";
 
+// Crea el popup y muestra el formulario
+export function mostrarPopup(x, y, onSubmit) {
+  // Puedes mejorar este modal como quieras
+  const div = document.createElement("div");
+  div.innerHTML = `
+    <form id="notaForm" style="position:fixed;top:20%;left:50%;transform:translate(-50%,-20%);background:#fff;padding:2rem;box-shadow:0 0 2rem #0008;z-index:9999">
+      <h2>Deja una nota</h2>
+      <label>Remitente<br><input name="nombre" required></label><br>
+      <label>Contraseña<br><input name="password" type="password" required></label><br>
+      <label>Mensaje<br><textarea name="mensaje" required></textarea></label><br>
+      <button>Guardar</button>
+      <button type="button" id="cancelarBtn">Cancelar</button>
+    </form>
+  `;
+  document.body.append(div);
 
-async function cifrarMensaje(mensaje, claveTexto) {
-  const encoder = new TextEncoder();
+  div.querySelector("#cancelarBtn").onclick = () => div.remove();
 
-  // Salt y IV aleatorios
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+  div.querySelector("#notaForm").onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target;
+    const nombre = f.nombre.value;
+    const password = f.password.value;
+    const mensaje = f.mensaje.value;
 
-  // Derivar clave con PBKDF2
-  const claveBase = await crypto.subtle.importKey(
-    "raw", encoder.encode(claveTexto),
-    { name: "PBKDF2" },
-    false,
-    ["deriveKey"]
-  );
+    // Generar salt y IV
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    // Derivar clave
+    const enc = new TextEncoder();
+    const keyMaterial = await window.crypto.subtle.importKey(
+      "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]
+    );
+    const key = await window.crypto.subtle.deriveKey({
+      name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256"
+    }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
+    // Cifrar
+    const cifrado = await window.crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      enc.encode(mensaje)
+    );
 
-  const claveAES = await crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt,
-      iterations: 100000,
-      hash: "SHA-256"
-    },
-    claveBase,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt"]
-  );
+    // Guardar nota
+    await guardarNota({
+      nombre,
+      mensaje: btoa(String.fromCharCode(...new Uint8Array(cifrado))),
+      salt: Array.from(salt).map(x => x.toString(16).padStart(2, "0")).join(""),
+      iv: Array.from(iv).map(x => x.toString(16).padStart(2, "0")).join(""),
+      x, y,
+      timestamp: new Date().toISOString()
+    });
 
-  // Cifrar el mensaje
-  const cifrado = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    claveAES,
-    encoder.encode(mensaje)
-  );
-
-  return {
-    mensaje: Array.from(new Uint8Array(cifrado)).map(b => b.toString(16).padStart(2, '0')).join(''),
-    salt: Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join(''),
-    iv: Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')
+    div.remove();
+    if (onSubmit) onSubmit();
   };
 }
-
-
-// Mostrar y ocultar el popup
-const btnAbrir = document.getElementById("btnNota");
-const popup = document.getElementById("popupNota");
-const cerrarPopup = document.getElementById("cerrarPopup");
-
-btnAbrir.addEventListener("click", () => popup.style.display = "block");
-cerrarPopup.addEventListener("click", () => popup.style.display = "none");
-
-document.getElementById("formNota").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const nombre = e.target.nombre.value;
-  const clave = e.target.clave.value;
-  const mensaje = e.target.mensaje.value;
-
-  const coordenadas = { x: window.scrollX, y: window.scrollY };
-  const cifrado = await cifrarMensaje(mensaje, clave);
-
-  await fetch(`${API_URL}/nota`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nombre, ...cifrado, coordenadas })
-  });
-
-  alert("✅ Nota enviada");
-  e.target.reset();
-  popup.style.display = "none";
-});

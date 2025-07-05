@@ -10,10 +10,8 @@ app.use(express.static(path.join(__dirname, "../public")));
 
 const { guardarNota, obtenerNotas } = require("./db");
 
-// 📝 Guardar nota cifrada
 app.post("/nota", async (req, res) => {
   try {
-    console.log("📩 Recibida nueva nota:", req.body);
     await guardarNota(req.body);
     res.json({ ok: true });
   } catch (err) {
@@ -22,7 +20,6 @@ app.post("/nota", async (req, res) => {
   }
 });
 
-// 📚 Obtener todas las notas
 app.get("/notas", async (req, res) => {
   try {
     const notas = await obtenerNotas();
@@ -33,7 +30,6 @@ app.get("/notas", async (req, res) => {
   }
 });
 
-// 🚀 Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });

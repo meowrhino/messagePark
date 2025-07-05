@@ -1,44 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Notas Seguras</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script src="api.js" defer></script>
-  <script src="app.js" defer></script>
-<script src="popup.js" defer></script>
+  <meta charset="UTF-8">
+  <title>MessagePark</title>
+  <script type="module" src="app.js"></script>
+  <script type="module" src="popup.js"></script>
+  <script type="module" src="api.js"></script>
+  <style>
+    body { margin: 0; overflow: auto; }
+    button { font-size: 1.2rem; }
+  </style>
 </head>
 <body>
-
-  <!-- 🌌 Espacio gigante -->
-  <div id="canvas" style="width:1000vw; height:1000vh;"></div>
-
-  <!-- 🔘 Botón fijo para abrir popup -->
-  <button id="btnNota">dejar nota</button>
-
-  <!-- 📝 Popup -->
-  <div id="popupNota">
-    <div class="popup-content">
-      <button id="cerrarPopup">✕</button>
-      <form id="formNota">
-        <input type="text" name="nombre" placeholder="Tu nombre" required />
-        <input type="password" name="clave" placeholder="Contraseña" required />
-        <textarea name="mensaje" placeholder="Tu mensaje" required></textarea>
-        <button type="submit">Enviar</button>
-      </form>
-    </div>
-  </div>
-
-  <div id="diana">🎯</div>
-
-<script>
-    // Centra la vista al cargar
-    window.scrollTo({
-      top: window.innerHeight * 4.5,
-      left: window.innerWidth * 4.5,
-      behavior: "instant"
-    });
-  </script>
 </body>
 </html>
