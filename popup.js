@@ -1,3 +1,5 @@
+
+
 async function cifrarMensaje(mensaje, claveTexto) {
   const encoder = new TextEncoder();
 
@@ -40,7 +42,6 @@ async function cifrarMensaje(mensaje, claveTexto) {
   };
 }
 
-const API_URL = "https://messagepark.onrender.com"; // tu backend real
 
 // Mostrar y ocultar el popup
 const btnAbrir = document.getElementById("btnNota");

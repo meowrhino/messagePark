@@ -1,4 +1,3 @@
-const API_URL = "https://messagepark.onrender.com";
 
 window.addEventListener("DOMContentLoaded", async () => {
   const res = await fetch(`${API_URL}/notas`);
