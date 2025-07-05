@@ -16,7 +16,8 @@ async function descifrarMensaje(cifrado, claveTexto, saltHex, ivHex) {
   const iv = hexToBuffer(ivHex);
 
   const claveBase = await crypto.subtle.importKey(
-    "raw", encoder.encode(claveTexto),
+    "raw",
+    encoder.encode(claveTexto),
     { name: "PBKDF2" },
     false,
     ["deriveKey"]
@@ -27,7 +28,7 @@ async function descifrarMensaje(cifrado, claveTexto, saltHex, ivHex) {
       name: "PBKDF2",
       salt,
       iterations: 100000,
-      hash: "SHA-256"
+      hash: "SHA-256",
     },
     claveBase,
     { name: "AES-GCM", length: 256 },
@@ -56,17 +57,24 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   const canvas = document.getElementById("canvas");
 
-  notas.forEach(nota => {
+  notas.forEach((nota) => {
     const div = document.createElement("div");
-    div.className = "nota";
+    div.className = "punto-nota";
     div.style.left = `${nota.coordenadas.x}px`;
     div.style.top = `${nota.coordenadas.y}px`;
     div.textContent = `💌 ${nota.nombre}`;
 
     div.addEventListener("click", async () => {
-      const clave = prompt(`Introduce la contraseña para leer el mensaje de ${nota.nombre}:`);
+      const clave = prompt(
+        `Introduce la contraseña para leer el mensaje de ${nota.nombre}:`
+      );
       if (!clave) return;
-      const mensaje = await descifrarMensaje(nota.mensaje, clave, nota.salt, nota.iv);
+      const mensaje = await descifrarMensaje(
+        nota.mensaje,
+        clave,
+        nota.salt,
+        nota.iv
+      );
       if (mensaje) alert(`📩 Mensaje de ${nota.nombre}:\n\n${mensaje}`);
     });
 

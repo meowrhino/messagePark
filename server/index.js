@@ -22,17 +22,14 @@ app.post("/nota", async (req, res) => {
   }
 });
 
-// 📄 Obtener todas las notas
-app.get("/notas", async (req, res) => {
+// 📝 Guardar nota cifrada
+app.post("/nota", async (req, res) => {
   try {
-    const notas = await obtenerNotas();
-    res.json(notas);
+    console.log("📩 Recibida nueva nota:", req.body);
+    await guardarNota(req.body);
+    res.json({ ok: true });
   } catch (err) {
-    console.error("Error al obtener notas:", err);
-    res.status(500).json({ error: "Error al obtener" });
+    console.error("❌ Error al guardar nota:", err);
+    res.status(500).json({ error: "Error al guardar" });
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Servidor en http://localhost:${PORT}`);
 });
