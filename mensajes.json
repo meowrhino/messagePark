@@ -38,5 +38,13 @@
     "ciphertext": "U2FsdGVkX192A7/c4WAFTUYO48t7on/0hDNVAZEyUbI=",
     "timestamp": 1751895363726,
     "fecha": "2025-07-07T13:36:03.911Z"
+  },
+  {
+    "autor": "aa",
+    "x": 0.4597585513078471,
+    "y": 0.4886211512717537,
+    "ciphertext": "U2FsdGVkX1/M71BvykvTC3O6hjW3RPVKAUNBC1St61o=",
+    "timestamp": 1751902504013,
+    "fecha": "2025-07-07T15:35:04.229Z"
   }
 ]
