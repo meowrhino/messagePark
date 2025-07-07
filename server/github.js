@@ -22,10 +22,8 @@ async function leerMensajes() {
   }
 
   const data = await res.json();
-  const contenido = Buffer.from(data.content, "base64").toString("utf8");
-  const mensajes = JSON.parse(contenido);
-
-  return { mensajes, sha: data.sha };
+  const contenido = Buffer.from(data.content, 'base64').toString('utf-8');
+  return { mensajes: JSON.parse(contenido), sha: data.sha };
 }
 
 // 📤 Guardar nuevo contenido en mensajes.json
