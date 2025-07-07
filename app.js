@@ -1,92 +1,109 @@
-// app.js
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-// 1️⃣ Variables globales y referencias
-let notas = [];
-const canvas  = document.getElementById("canvas");
-const ctx     = canvas.getContext("2d");
-const modoBtn = document.getElementById("modo-toggle");
-let isAdmin   = false;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-// 2️⃣ Ajuste de tamaño dinámico del canvas
-function resizeCanvas() {
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+// 💾 Variables globales
+let notas = []; // ← Aquí defines la variable para guardar las notas
 
-// 3️⃣ Función para pintar una nota
-function pintarNota(nota, index) {
-  const x = nota.x * canvas.width;
-  const y = nota.y * canvas.height;
-  const r = 10;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle   = nota.color || "#FFEB3B";
-  ctx.fill();
-  ctx.lineWidth   = 2;
-  ctx.strokeStyle = "#333";
-  ctx.stroke();
-  ctx.closePath();
-  ctx.fillStyle = "#000";
-  ctx.font      = "14px sans-serif";
-  ctx.fillText(index + 1, x + r + 4, y + 5);
-}
-window.pintarNota = pintarNota; // exponer global
-
-// 4️⃣ Dibujar todas las notas cargadas
-function dibujarNotas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  notas.forEach((n, i) => pintarNota(n, i));
-}
-
-// 5️⃣ Cargar notas desde el backend
+// 💾 Cargar notas desde el backend
 async function cargarNotas() {
   try {
-    const res  = await fetch("/mensajes");
+    const res = await fetch("https://messagepark.onrender.com/mensajes");
     const data = await res.json();
-    notas      = Array.isArray(data) ? data : data.contenido;
-    window.notas = notas; // exponer para debug
+    notas = Array.isArray(data) ? data : data.contenido; // Asegura que notas siempre es un array
     dibujarNotas();
   } catch (err) {
     console.error("Error al cargar notas:", err);
   }
 }
 
-// 6️⃣ Toggle de modo Admin/Lectura
-modoBtn.addEventListener("click", () => {
-  isAdmin = !isAdmin;
-  modoBtn.textContent = isAdmin ? "Modo Lectura" : "Modo Admin";
+// 🖼️ Dibujar todas las notas en el canvas
+function dibujarNotas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  notas.forEach((nota) => {
+    const x = nota.x * canvas.width;
+    const y = nota.y * canvas.height;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = "#FFD700";
+    ctx.fill();
+
+    ctx.fillStyle = "#000";
+    ctx.font = "12px sans-serif";
+    ctx.fillText(nota.autor, x + 12, y + 4);
+  });
+}
+
+// 🖱️ Detectar clics y abrir popup
+canvas.addEventListener("click", (e) => {
+  const x = e.clientX;
+  const y = e.clientY;
+  window.abrirPopup(x, y);
 });
 
-// 7️⃣ Manejador de click en el canvas
-canvas.addEventListener("click", e => {
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) * (canvas.width  / rect.width);
-  const y = (e.clientY - rect.top)  * (canvas.height / rect.height);
+// ⛳ Iniciar todo
+cargarNotas();
 
-  if (!isAdmin) {
-    // Modo lectura: si clicas en una nota, pide clave y muestra
-    const idx = notas.findIndex(n => {
-      const dx = x - n.x * canvas.width;
-      const dy = y - n.y * canvas.height;
-      return Math.hypot(dx, dy) < 10;
+// 📐 Redibujar en resize
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  dibujarNotas();
+});
+
+///cambiar modos y cursores
+const modoToggle = document.getElementById("modo-toggle");
+let modoActual = "enviar"; // por defecto
+
+// Cambiar cursor según modo
+function cambiarCursor(modo) {
+  if (modo === "enviar") {
+    document.body.style.cursor = 'url("Sniper.ani"), auto';
+    modoToggle.textContent = "Enviar nota";
+  } else if (modo === "leer") {
+    document.body.style.cursor = 'url("mailbox.ani"), auto';
+    modoToggle.textContent = "Leer notas";
+  }
+}
+
+// Alternar modo al hacer clic en botón
+modoToggle.addEventListener("click", () => {
+  modoActual = modoActual === "enviar" ? "leer" : "enviar";
+  cambiarCursor(modoActual);
+});
+
+// Inicializar cursor
+cambiarCursor(modoActual);
+
+// 🖱️ Detectar clics según modo actual
+canvas.addEventListener("click", (e) => {
+  const x = e.clientX;
+  const y = e.clientY;
+
+  if (modoActual === "leer") {
+    const notaClicada = notas.find((nota) => {
+      const x = nota.x * canvas.width;
+      const y = nota.y * canvas.height;
+      return Math.hypot(x - e.clientX, y - e.clientY) < 20;
     });
-    if (idx >= 0) {
-      const pass = prompt("Introduce la contraseña:");
-      const bytes = CryptoJS.AES.decrypt(notas[idx].texto, pass);
-      const msg   = bytes.toString(CryptoJS.enc.Utf8) || "Clave incorrecta";
-      alert(msg);
-      return;
+
+    if (notaClicada) {
+      abrirPopupLeerNota(notaClicada);
     }
-    // Si pinchas en fondo, abrir pop-up
-    window.abrirPopup(x, y);
-  } else {
-    // Modo admin
-    console.log("Modo Admin: clic en", x, y);
-    // Aquí podrías iniciar selección de área o editar notas
   }
 });
 
-// 8️⃣ Ejecutar carga inicial
-window.addEventListener("load", cargarNotas);
+// 📖 Abrir popup para leer nota con contraseña
+function abrirPopupLeerNota(nota) {
+  const pass = prompt("Introduce la contraseña para leer la nota:");
+
+  if (pass === nota.password) {
+    alert(`Contenido de la nota: ${nota.contenido}\nFecha: ${nota.fecha}`);
+  } else {
+    alert("Contraseña incorrecta.");
+  }
+}

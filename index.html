@@ -1,31 +1,28 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MessagePark</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <title>✉️🏞️</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Toggle de modo Admin/Lectura -->
-  <button id="modo-toggle">Modo Admin</button>
-
-  <!-- Canvas principal -->
   <canvas id="canvas"></canvas>
 
-  <!-- Popup para crear/leer notas -->
   <div id="popup" class="hidden">
-    <h2>Escribe tu nota</h2>
-    <input type="text" id="autor" placeholder="Tu nombre" />
+    <h2>escribe</h2>
+    <input type="text" id="autor" placeholder="Tu nombre">
     <textarea id="mensaje" placeholder="Escribe tu mensaje..."></textarea>
-    <input type="password" id="clave" placeholder="Contraseña" />
-    <div id="color-palette" class="palette"></div>
+    <input type="password" id="clave" placeholder="Contraseña">
     <button id="enviar">Enviar</button>
     <button id="cerrar">Cancelar</button>
     <p id="popupInfo"></p>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
   <script src="popup.js"></script>
   <script src="app.js"></script>
+
+  <button id="modo-toggle">Enviar nota</button>
 </body>
 </html>
