@@ -4,19 +4,31 @@
 export const ZONAS = [
   {
     nombre: "Bosque de Eucaliptos",
-    x: 5000, y: 500, w: 1800, h: 2000,
-    color: "#a8e6cf", letrero: "🌿 Bosque de Eucaliptos"
+    x: 5000,
+    y: 500,
+    w: 1800,
+    h: 2000,
+    color: "#a8e6cf",
+    letrero: "🌿 Bosque de Eucaliptos",
   },
   {
     nombre: "Lago Central",
-    x: 3800, y: 3200, w: 2000, h: 1500,
-    color: "#89d7f5", letrero: "💧 Lago Central"
+    x: 3800,
+    y: 3200,
+    w: 2000,
+    h: 1500,
+    color: "#89d7f5",
+    letrero: "💧 Lago Central",
   },
   {
     nombre: "Pradera de flores",
-    x: 1000, y: 7000, w: 3500, h: 1500,
-    color: "#ffd3b6", letrero: "🌸 Pradera de flores"
-  }
+    x: 1000,
+    y: 7000,
+    w: 3500,
+    h: 1500,
+    color: "#ffd3b6",
+    letrero: "🌸 Pradera de flores",
+  },
   // ... puedes añadir más zonas
 ];
 import { obtenerNotas } from "./api.js";
@@ -37,21 +49,9 @@ function centrarVista() {
   );
 }
 
-// Botón dejar nota
 const btn = document.createElement("button");
-// app.js
-btn.style.position = "fixed";
-btn.style.bottom = "30px";
-btn.style.left = "50%";
-btn.style.transform = "translateX(-50%)";
-btn.style.top = "unset";
-btn.style.right = "unset";
-btn.style.padding = "1rem 2rem";
-btn.style.background = "#fff";
-btn.style.border = "2px solid #999";
-btn.style.borderRadius = "999px";
-btn.style.boxShadow = "0 2px 16px #0003";
-btn.style.fontWeight = "bold";
+btn.textContent = "Dejar nota";
+btn.className = "btn-dejar-nota"; // Añade una clase identificativa
 
 btn.onclick = () => {
   // Pide posición actual (puedes personalizarlo)
@@ -60,19 +60,18 @@ btn.onclick = () => {
   mostrarPopup(x, y, pintarNotas);
 };
 
+document.body.appendChild(btn);
+
 // Mostrar notas en el lienzo
 async function pintarNotas() {
   lienzo.innerHTML = "";
   const notas = await obtenerNotas();
   for (const nota of notas) {
     const div = document.createElement("div");
-    div.style.position = "absolute";
+    div.className = "punto-nota";
     div.style.left = `${nota.x}px`;
     div.style.top = `${nota.y}px`;
-    div.style.background = "#faf";
-    div.style.padding = "12px";
-    div.style.borderRadius = "8px";
-    div.style.cursor = "pointer";
+    div.style.backgroundColor = nota.color || "#faf";
     div.textContent = nota.nombre;
     div.onclick = () => desbloquearNota(nota);
     lienzo.appendChild(div);
@@ -84,16 +83,33 @@ async function desbloquearNota(nota) {
   const password = prompt("Introduce la contraseña para ver la nota:");
   if (!password) return;
   try {
-    const salt = new Uint8Array(nota.salt.match(/.{1,2}/g).map(x => parseInt(x, 16)));
-    const iv = new Uint8Array(nota.iv.match(/.{1,2}/g).map(x => parseInt(x, 16)));
+    const salt = new Uint8Array(
+      nota.salt.match(/.{1,2}/g).map((x) => parseInt(x, 16))
+    );
+    const iv = new Uint8Array(
+      nota.iv.match(/.{1,2}/g).map((x) => parseInt(x, 16))
+    );
     const enc = new TextEncoder();
     const keyMaterial = await window.crypto.subtle.importKey(
-      "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]
+      "raw",
+      enc.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveKey"]
     );
-    const key = await window.crypto.subtle.deriveKey({
-      name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256"
-    }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-    const cifrado = Uint8Array.from(atob(nota.mensaje), c => c.charCodeAt(0));
+    const key = await window.crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt,
+        iterations: 100000,
+        hash: "SHA-256",
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["decrypt"]
+    );
+    const cifrado = Uint8Array.from(atob(nota.mensaje), (c) => c.charCodeAt(0));
     const plano = await window.crypto.subtle.decrypt(
       { name: "AES-GCM", iv },
       key,
@@ -113,28 +129,20 @@ window.addEventListener("resize", centrarVista);
 function dibujarZonas() {
   for (const zona of ZONAS) {
     const div = document.createElement("div");
-    div.style.position = "absolute";
+    div.className = "zona-parque";
     div.style.left = `${zona.x}px`;
     div.style.top = `${zona.y}px`;
     div.style.width = `${zona.w}px`;
     div.style.height = `${zona.h}px`;
-    div.style.background = zona.color;
-    div.style.opacity = "0.2";
-    div.style.borderRadius = "30px";
-    div.style.zIndex = "1";
+    div.style.backgroundColor = zona.color; // Solo el color dinámico se queda en JS
     lienzo.appendChild(div);
 
     // Letrero (si quieres un letrero flotante)
     const letrero = document.createElement("div");
     letrero.textContent = zona.letrero;
-    letrero.style.position = "absolute";
+    letrero.className = "letrero-zona";
     letrero.style.left = `${zona.x + 20}px`;
     letrero.style.top = `${zona.y + 20}px`;
-    letrero.style.background = "#fff8";
-    letrero.style.padding = "8px 20px";
-    letrero.style.borderRadius = "999px";
-    letrero.style.fontWeight = "bold";
-    letrero.style.zIndex = "2";
     lienzo.appendChild(letrero);
   }
 }

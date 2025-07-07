@@ -12,25 +12,25 @@ export function mostrarPopup(x, y, onSubmit) {
   const zona = zonaDe(x, y);
   const div = document.createElement("div");
   div.innerHTML = `
-    <form id="notaForm" style="position:fixed;top:20%;left:50%;transform:translate(-50%,-20%);background:#fff;padding:2rem;box-shadow:0 0 2rem #0008;z-index:9999">
-      <h2>Deja una nota</h2>
-      <div style="margin-bottom:1em">
-        ${
-          zona
-            ? `<b>Zona:</b> <span>${zona.letrero}</span>`
-            : "<b>Zona:</b> <span>Espacio abierto</span>"
-        }
-      </div>
-      <label>Remitente<br><input name="nombre" required></label><br>
-      <label>Contraseña<br><input name="password" type="password" required></label><br>
-      <label>Mensaje<br><textarea name="mensaje" required></textarea></label><br>
-      <label>Color<br>
-        <input type="color" name="color" value="#faf0af" style="width:3em;height:2em;border:none;">
-      </label><br><br>
-      <button>Guardar</button>
-      <button type="button" id="cancelarBtn">Cancelar</button>
-    </form>
-  `;
+  <form id="notaForm" class="popup-nota">
+    <h2>Deja una nota</h2>
+    <div style="margin-bottom:1em">
+      ${
+        zona
+          ? `<b>Zona:</b> <span>${zona.letrero}</span>`
+          : "<b>Zona:</b> <span>Espacio abierto</span>"
+      }
+    </div>
+    <label>Remitente<br><input name="nombre" required></label><br>
+    <label>Contraseña<br><input name="password" type="password" required></label><br>
+    <label>Mensaje<br><textarea name="mensaje" required></textarea></label><br>
+    <label>Color<br>
+      <input type="color" name="color" class="color-input" value="#faf0af">
+    </label><br><br>
+    <button>Guardar</button>
+    <button type="button" id="cancelarBtn">Cancelar</button>
+  </form>
+`;
   document.body.append(div);
   div.querySelector("#cancelarBtn").onclick = () => div.remove();
 
