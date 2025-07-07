@@ -19,12 +19,19 @@ function centrarVista() {
 
 // Botón dejar nota
 const btn = document.createElement("button");
-btn.textContent = "Dejar nota";
+// app.js
 btn.style.position = "fixed";
-btn.style.top = "16px";
-btn.style.right = "16px";
-btn.style.zIndex = 999;
-document.body.appendChild(btn);
+btn.style.bottom = "30px";
+btn.style.left = "50%";
+btn.style.transform = "translateX(-50%)";
+btn.style.top = "unset";
+btn.style.right = "unset";
+btn.style.padding = "1rem 2rem";
+btn.style.background = "#fff";
+btn.style.border = "2px solid #999";
+btn.style.borderRadius = "999px";
+btn.style.boxShadow = "0 2px 16px #0003";
+btn.style.fontWeight = "bold";
 
 btn.onclick = () => {
   // Pide posición actual (puedes personalizarlo)
@@ -81,3 +88,33 @@ async function desbloquearNota(nota) {
 centrarVista();
 pintarNotas();
 window.addEventListener("resize", centrarVista);
+
+// app.js (dentro de pintarNotas o en una función aparte)
+function dibujarZonas() {
+  for (const zona of ZONAS) {
+    const div = document.createElement("div");
+    div.style.position = "absolute";
+    div.style.left = `${zona.x}px`;
+    div.style.top = `${zona.y}px`;
+    div.style.width = `${zona.w}px`;
+    div.style.height = `${zona.h}px`;
+    div.style.background = zona.color;
+    div.style.opacity = "0.2";
+    div.style.borderRadius = "30px";
+    div.style.zIndex = "1";
+    lienzo.appendChild(div);
+
+    // Letrero (si quieres un letrero flotante)
+    const letrero = document.createElement("div");
+    letrero.textContent = zona.letrero;
+    letrero.style.position = "absolute";
+    letrero.style.left = `${zona.x + 20}px`;
+    letrero.style.top = `${zona.y + 20}px`;
+    letrero.style.background = "#fff8";
+    letrero.style.padding = "8px 20px";
+    letrero.style.borderRadius = "999px";
+    letrero.style.fontWeight = "bold";
+    letrero.style.zIndex = "2";
+    lienzo.appendChild(letrero);
+  }
+}
