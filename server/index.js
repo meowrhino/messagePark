@@ -22,11 +22,16 @@ app.get("/mensajes", async (req, res) => {
 
 app.post("/mensajes", async (req, res) => {
   try {
-    const nuevo = req.body;
+    const nuevoMensaje = {
+      ...req.body,
+      fecha: new Date().toISOString()  // 💡 añade timestamp actual
+    };
+
     const mensajes = await leerMensajes();
-    const actualizados = [...mensajes, nuevo];
-    await guardarMensajes(actualizados);
-    res.status(201).json({ mensaje: "Mensaje guardado" });
+    mensajes.push(nuevoMensaje);
+    await guardarMensajes(mensajes);
+
+    res.json({ ok: true, mensaje: nuevoMensaje });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
