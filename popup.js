@@ -1,95 +1,79 @@
-import { guardarNota } from "./api.js";
-import { ZONAS } from "./app.js";
+let popup = document.getElementById("popup");
+let btnEnviar = document.getElementById("enviar");
+let btnCerrar = document.getElementById("cerrar");
 
-// Dado x, y, encuentra la zona:
-function zonaDe(x, y) {
-  return ZONAS.find(
-    (z) => x >= z.x && x < z.x + z.w && y >= z.y && y < z.y + z.h
-  );
-}
+let popupInfo = document.getElementById("popupInfo");
+let inputAutor = document.getElementById("autor");
+let inputMensaje = document.getElementById("mensaje");
+let inputClave = document.getElementById("clave");
 
-export function mostrarPopup(x, y, onSubmit) {
-  const zona = zonaDe(x, y);
-  const div = document.createElement("div");
-  div.innerHTML = `
-  <form id="notaForm" class="popup-nota">
-    <h2>Deja una nota</h2>
-    <div style="margin-bottom:1em">
-      ${
-        zona
-          ? `<b>Zona:</b> <span>${zona.letrero}</span>`
-          : "<b>Zona:</b> <span>Espacio abierto</span>"
-      }
-    </div>
-    <label>Remitente<br><input name="nombre" required></label><br>
-    <label>Contraseña<br><input name="password" type="password" required></label><br>
-    <label>Mensaje<br><textarea name="mensaje" required></textarea></label><br>
-    <label>Color<br>
-      <input type="color" name="color" class="color-input" value="#faf0af">
-    </label><br><br>
-    <button>Guardar</button>
-    <button type="button" id="cancelarBtn">Cancelar</button>
-  </form>
-`;
-  document.body.append(div);
-  div.querySelector("#cancelarBtn").onclick = () => div.remove();
+let coordenadasClick = { x: 0, y: 0 };
 
-  div.querySelector("#notaForm").onsubmit = async (e) => {
-    e.preventDefault();
-    const f = e.target;
-    const nombre = f.nombre.value;
-    const password = f.password.value;
-    const mensaje = f.mensaje.value;
-    const color = f.color.value;
+// Mostrar popup en coordenadas
+window.abrirPopup = function(x, y) {
+  coordenadasClick = { x, y };
+  popup.classList.remove("hidden");
+  popup.style.left = `${x}px`;
+  popup.style.top = `${y}px`;
+};
 
-    // Generar salt y IV
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    // Derivar clave
-    const enc = new TextEncoder();
-    const keyMaterial = await window.crypto.subtle.importKey(
-      "raw",
-      enc.encode(password),
-      "PBKDF2",
-      false,
-      ["deriveKey"]
-    );
-    const key = await window.crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt,
-        iterations: 100000,
-        hash: "SHA-256",
-      },
-      keyMaterial,
-      { name: "AES-GCM", length: 256 },
-      false,
-      ["encrypt"]
-    );
-    // Cifrar
-    const cifrado = await window.crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      key,
-      enc.encode(mensaje)
-    );
+// Cerrar popup
+btnCerrar.addEventListener("click", () => {
+  popup.classList.add("hidden");
+  limpiarPopup();
+});
 
-    // Guardar nota
-    await guardarNota({
-      nombre,
-      mensaje: btoa(String.fromCharCode(...new Uint8Array(cifrado))),
-      salt: Array.from(salt)
-        .map((x) => x.toString(16).padStart(2, "0"))
-        .join(""),
-      iv: Array.from(iv)
-        .map((x) => x.toString(16).padStart(2, "0"))
-        .join(""),
-      x,
-      y,
-      color,
-      timestamp: new Date().toISOString(),
+// Enviar mensaje
+btnEnviar.addEventListener("click", async () => {
+  const autor = inputAutor.value.trim();
+  const mensaje = inputMensaje.value.trim();
+  const clave = inputClave.value;
+
+  if (!autor || !mensaje || !clave) {
+    popupInfo.textContent = "Por favor, completa todos los campos.";
+    return;
+  }
+
+  // Encriptar
+  const ciphertext = CryptoJS.AES.encrypt(mensaje, clave).toString();
+
+  // Preparar objeto
+  const nota = {
+    autor,
+    x: coordenadasClick.x,
+    y: coordenadasClick.y,
+    ciphertext,
+    timestamp: Date.now()
+  };
+
+  // Enviar
+  try {
+    const res = await fetch("https://messagepark.onrender.com/mensajes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nota)
     });
 
-    div.remove();
-    if (onSubmit) onSubmit();
-  };
+    if (res.ok) {
+      popupInfo.textContent = "✅ Nota enviada con éxito.";
+      setTimeout(() => {
+        popup.classList.add("hidden");
+        limpiarPopup();
+        location.reload(); // puedes cambiar por una función que recargue las notas
+      }, 1000);
+    } else {
+      popupInfo.textContent = "❌ Error al enviar.";
+    }
+  } catch (err) {
+    popupInfo.textContent = "⚠️ No se pudo conectar.";
+    console.error(err);
+  }
+});
+
+// Limpiar formulario
+function limpiarPopup() {
+  inputAutor.value = "";
+  inputMensaje.value = "";
+  inputClave.value = "";
+  popupInfo.textContent = "";
 }

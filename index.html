@@ -2,12 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>MessagePark</title>
-  <script type="module" src="app.js"></script>
-  <script type="module" src="popup.js"></script>
-  <script type="module" src="api.js"></script>
+  <title>✉️🏞️</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <canvas id="canvas"></canvas>
+
+  <div id="popup" class="hidden">
+    <h2>escribe</h2>
+    <input type="text" id="autor" placeholder="Tu nombre">
+    <textarea id="mensaje" placeholder="Escribe tu mensaje..."></textarea>
+    <input type="password" id="clave" placeholder="Contraseña">
+    <button id="enviar">Enviar</button>
+    <button id="cerrar">Cancelar</button>
+    <p id="popupInfo"></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+  <script src="popup.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

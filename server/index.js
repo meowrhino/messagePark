@@ -1,35 +1,42 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
+const { leerMensajes, guardarMensajes } = require("./github");
+require("dotenv").config();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../public")));
 
-const { guardarNota, obtenerNotas } = require("./db");
-
-app.post("/nota", async (req, res) => {
+// GET → obtener todos los mensajes
+app.get("/mensajes", async (req, res) => {
   try {
-    await guardarNota(req.body);
-    res.json({ ok: true });
+    const { mensajes } = await leerMensajes();
+    res.json(mensajes);
   } catch (err) {
-    console.error("❌ Error al guardar nota:", err);
-    res.status(500).json({ error: "Error al guardar" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.get("/notas", async (req, res) => {
+// POST → añadir un nuevo mensaje
+app.post("/mensajes", async (req, res) => {
   try {
-    const notas = await obtenerNotas();
-    res.json(notas);
+    const nuevo = req.body;
+    const { mensajes } = await leerMensajes();
+    const actualizados = [...mensajes, nuevo];
+    await guardarMensajes(actualizados);
+    res.status(201).json({ mensaje: "Mensaje guardado" });
   } catch (err) {
-    console.error("❌ Error al obtener notas:", err);
-    res.status(500).json({ error: "Error al obtener notas" });
+    res.status(500).json({ error: err.message });
   }
+});
+
+// ✅ Ping de prueba
+app.get("/", (req, res) => {
+  res.send("🟢 Backend MessagePark activo");
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor escuchando en puerto ${PORT}`);
+  console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
 });
