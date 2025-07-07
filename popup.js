@@ -10,7 +10,7 @@ let inputClave = document.getElementById("clave");
 let coordenadasClick = { x: 0, y: 0 };
 
 // Mostrar popup en coordenadas
-window.abrirPopup = function(x, y) {
+window.abrirPopup = function (x, y) {
   coordenadasClick = { x, y };
   popup.classList.remove("hidden");
   popup.style.left = `${x}px`;
@@ -40,10 +40,10 @@ btnEnviar.addEventListener("click", async () => {
   // Preparar objeto
   const nota = {
     autor,
-    x: coordenadasClick.x,
-    y: coordenadasClick.y,
+    x: coordenadasClick.x / window.innerWidth,
+    y: coordenadasClick.y / window.innerHeight,
     ciphertext,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 
   // Enviar
@@ -51,7 +51,7 @@ btnEnviar.addEventListener("click", async () => {
     const res = await fetch("https://messagepark.onrender.com/mensajes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nota)
+      body: JSON.stringify(nota),
     });
 
     if (res.ok) {

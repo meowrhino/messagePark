@@ -20,3 +20,16 @@
   width: 90%;
   margin-bottom: 0.5em;
 }
+
+#modo-toggle {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 0.8rem 1.4rem;
+  background: black;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  z-index: 1000;
+}
