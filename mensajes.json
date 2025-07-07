@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "contenido": "hola mundo",
+    "x": 100,
+    "y": 150,
+    "password": "",
+    "area": "bosque"
+  }
+]

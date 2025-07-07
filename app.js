@@ -1,9 +1,11 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-let notas = [];
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
+// 💾 Variables globales
+let notas = []; // ← Aquí defines la variable para guardar las notas
 
 // 💾 Cargar notas desde el backend
 async function cargarNotas() {
@@ -48,4 +50,21 @@ window.addEventListener("resize", () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   dibujarNotas();
+});
+
+//endpoint
+app.get("/mensajes", (req, res) => {
+  fs.readFile("mensajes.json", "utf-8", (err, data) => {
+    if (err) {
+      console.error("Error al leer mensajes:", err);
+      return res.status(500).json({ error: "No se pudieron leer los mensajes" });
+    }
+    try {
+      const mensajes = JSON.parse(data);
+      res.json(mensajes);
+    } catch (e) {
+      console.error("Error al parsear JSON:", e);
+      res.status(500).json({ error: "JSON malformado" });
+    }
+  });
 });
