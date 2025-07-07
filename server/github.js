@@ -1,4 +1,4 @@
-const fetch = require("node-fetch");
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const owner = "meowrhino"; // ← tu usuario de GitHub
 const repo = "messagePark"; // ← el repo donde está mensajes.json
