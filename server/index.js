@@ -13,8 +13,8 @@ app.use(express.json());
 
 app.get("/mensajes", async (req, res) => {
   try {
-    const mensajes = await leerMensajes();
-    res.json(mensajes);
+    const { contenido } = await leerMensajes(); // solo usamos el contenido
+    res.json(contenido);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -27,9 +27,9 @@ app.post("/mensajes", async (req, res) => {
       fecha: new Date().toISOString()  // 💡 añade timestamp actual
     };
 
-    const mensajes = await leerMensajes();
-    mensajes.push(nuevoMensaje);
-    await guardarMensajes(mensajes);
+    const { contenido } = await leerMensajes(); // ← CORREGIDO: extraemos contenido directamente
+    contenido.push(nuevoMensaje);               // ← CORREGIDO: usamos el array "contenido"
+    await guardarMensajes(contenido);           // ← CORREGIDO: guardamos el array actualizado
 
     res.json({ ok: true, mensaje: nuevoMensaje });
   } catch (err) {

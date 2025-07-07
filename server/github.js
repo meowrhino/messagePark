@@ -12,9 +12,10 @@ const headers = {
 };
 
 // 📥 Leer contenido de mensajes.json desde el repo
+// 📥 Leer contenido de mensajes.json desde el repo
 async function leerMensajes() {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-    headers,
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/server/${path}`, {
+    headers
   });
 
   if (!res.ok) {
@@ -22,8 +23,14 @@ async function leerMensajes() {
   }
 
   const data = await res.json();
+
+  // Decodifica el contenido base64
   const contenido = Buffer.from(data.content, 'base64').toString('utf-8');
-  return { mensajes: JSON.parse(contenido), sha: data.sha };
+
+  return {
+    contenido: JSON.parse(contenido),
+    sha: data.sha
+  };
 }
 
 // 📤 Guardar nuevo contenido en mensajes.json

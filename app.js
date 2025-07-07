@@ -12,7 +12,7 @@ async function cargarNotas() {
   try {
     const res = await fetch("https://messagepark.onrender.com/mensajes");
     const data = await res.json();
-    notas = data;
+    notas = Array.isArray(data) ? data : data.contenido;  // Asegura que notas siempre es un array
     dibujarNotas();
   } catch (err) {
     console.error("Error al cargar notas:", err);
