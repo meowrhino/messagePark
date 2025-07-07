@@ -9,21 +9,21 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// GET → obtener todos los mensajes
+
+
 app.get("/mensajes", async (req, res) => {
   try {
-    const { mensajes } = await leerMensajes();
+    const mensajes = await leerMensajes();
     res.json(mensajes);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST → añadir un nuevo mensaje
 app.post("/mensajes", async (req, res) => {
   try {
     const nuevo = req.body;
-    const { mensajes } = await leerMensajes();
+    const mensajes = await leerMensajes();
     const actualizados = [...mensajes, nuevo];
     await guardarMensajes(actualizados);
     res.status(201).json({ mensaje: "Mensaje guardado" });
