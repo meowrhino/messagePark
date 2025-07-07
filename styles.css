@@ -1,11 +1,13 @@
+body {
+  margin: 0;
+  overflow: hidden;
+}
 #canvas {
-  width: 1000vw;
-  height: 1000vh;
   display: block;
 }
-
-/*POPUP*/
-
+.hidden {
+  display: none;
+}
 #popup {
   position: absolute;
   background: black;
@@ -16,42 +18,18 @@
   width: 300px;
   max-width: 90vw;
 }
-
-.hidden {
-  display: none;
-}
-
-#popup input,
-#popup textarea {
-  width: 90%;
-  margin-bottom: 0.5em;
-}
-
-#modo-toggle {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  padding: 0.8rem 1.4rem;
-  background: black;
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-  border: none;
-  z-index: 1000;
-}
-
 .palette {
   display: flex;
   gap: 4px;
   margin: 8px 0;
 }
-.palette .swatch {
+.swatch {
   width: 24px;
   height: 24px;
   border: 2px solid transparent;
-  cursor: pointer;
   border-radius: 4px;
+  cursor: pointer;
 }
-.palette .swatch.selected {
-  border-color: #333;
+.swatch.selected {
+  border-color: #fff;
 }
