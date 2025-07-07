@@ -1,6 +1,7 @@
 let popup = document.getElementById("popup");
 let btnEnviar = document.getElementById("enviar");
 let btnCerrar = document.getElementById("cerrar");
+const canvas = document.getElementById("canvas");
 
 let popupInfo = document.getElementById("popupInfo");
 let inputAutor = document.getElementById("autor");
@@ -40,8 +41,8 @@ btnEnviar.addEventListener("click", async () => {
   // Preparar objeto
   const nota = {
     autor,
-    x: coordenadasClick.x / window.innerWidth,
-    y: coordenadasClick.y / window.innerHeight,
+    x: coordenadasClick.x / canvas.width,
+    y: coordenadasClick.y / canvas.height,
     ciphertext,
     timestamp: Date.now(),
   };
