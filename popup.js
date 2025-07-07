@@ -1,80 +1,101 @@
-let popup = document.getElementById("popup");
-let btnEnviar = document.getElementById("enviar");
-let btnCerrar = document.getElementById("cerrar");
-const canvas = document.getElementById("canvas");
+// popup.js
 
-let popupInfo = document.getElementById("popupInfo");
-let inputAutor = document.getElementById("autor");
-let inputMensaje = document.getElementById("mensaje");
-let inputClave = document.getElementById("clave");
+// 1️⃣ Paleta de colores
+const colors = ["#FFEB3B","#E91E63","#2196F3","#4CAF50","#FF9800","#9C27B0"];
+let selectedColor = colors[0];
 
-let coordenadasClick = { x: 0, y: 0 };
+// 2️⃣ Referencias del DOM
+const popup       = document.getElementById("popup");
+const canvas      = document.getElementById("canvas");
+const inputAutor  = document.getElementById("autor");
+const inputTexto  = document.getElementById("mensaje");
+const inputClave  = document.getElementById("clave");
+const btnEnviar   = document.getElementById("enviar");
+const btnCerrar   = document.getElementById("cerrar");
+const popupInfo   = document.getElementById("popupInfo");
+const paletteDiv  = document.getElementById("color-palette");
 
-// Mostrar popup en coordenadas
-window.abrirPopup = function (x, y) {
-  coordenadasClick = { x, y };
+// 3️⃣ Construye la paleta de swatches
+colors.forEach(col => {
+  const sw = document.createElement("div");
+  sw.className = "swatch";
+  sw.style.backgroundColor = col;
+  if (col === selectedColor) sw.classList.add("selected");
+  sw.addEventListener("click", () => {
+    selectedColor = col;
+    paletteDiv.querySelectorAll(".swatch")
+      .forEach(el => el.classList.toggle("selected", el === sw));
+  });
+  paletteDiv.appendChild(sw);
+});
+
+// 4️⃣ Función para limpiar el formulario
+function limpiarPopup() {
+  inputAutor.value  = "";
+  inputTexto.value  = "";
+  inputClave.value  = "";
+  popupInfo.textContent = "";
+  // reset color selection
+  selectedColor = colors[0];
+  paletteDiv.querySelectorAll(".swatch")
+    .forEach(sw => sw.classList.toggle("selected", sw.style.backgroundColor === selectedColor));
+}
+
+// 5️⃣ Control de apertura / cierre
+let clickXY = { x:0, y:0 };
+window.abrirPopup = (x, y) => {
+  clickXY = { x, y };
+  limpiarPopup();
   popup.classList.remove("hidden");
-  popup.style.left = `${x}px`;
-  popup.style.top = `${y}px`;
+  popup.style.left = x + "px";
+  popup.style.top  = y + "px";
+  inputAutor.focus();
 };
-
-// Cerrar popup
 btnCerrar.addEventListener("click", () => {
   popup.classList.add("hidden");
   limpiarPopup();
 });
 
-// Enviar mensaje
+// 6️⃣ Envío de la nota
 btnEnviar.addEventListener("click", async () => {
   const autor = inputAutor.value.trim();
-  const mensaje = inputMensaje.value.trim();
-  const clave = inputClave.value;
-
-  if (!autor || !mensaje || !clave) {
-    popupInfo.textContent = "Por favor, completa todos los campos.";
+  const texto = inputTexto.value.trim();
+  const clave = inputClave.value.trim();
+  if (!autor || !texto || !clave) {
+    popupInfo.textContent = "Autor, mensaje y clave son obligatorios";
     return;
   }
 
-  // Encriptar
-  const ciphertext = CryptoJS.AES.encrypt(mensaje, clave).toString();
+  // Encriptar con CryptoJS
+  const ciphertext = CryptoJS.AES.encrypt(texto, clave).toString();
 
-  // Preparar objeto
+  // Construir el objeto nota
   const nota = {
     autor,
-    x: coordenadasClick.x / canvas.width,
-    y: coordenadasClick.y / canvas.height,
-    ciphertext,
-    timestamp: Date.now(),
+    texto:     ciphertext,
+    color:     selectedColor,
+    x:         clickXY.x / canvas.width,
+    y:         clickXY.y / canvas.height,
+    timestamp: Date.now()
   };
 
-  // Enviar
-  try {
-    const res = await fetch("https://messagepark.onrender.com/mensajes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nota),
-    });
+  // 1️⃣ POST al backend
+  const res = await fetch("/mensajes", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(nota)
+  });
 
-    if (res.ok) {
-      popupInfo.textContent = "✅ Nota enviada con éxito.";
-      setTimeout(() => {
-        popup.classList.add("hidden");
-        limpiarPopup();
-        location.reload(); // puedes cambiar por una función que recargue las notas
-      }, 1000);
-    } else {
-      popupInfo.textContent = "❌ Error al enviar.";
-    }
-  } catch (err) {
-    popupInfo.textContent = "⚠️ No se pudo conectar.";
-    console.error(err);
+  if (res.ok) {
+    popupInfo.textContent = "✅ Nota enviada con éxito";
+    // 2️⃣ Cerrar y pintar al instante
+    setTimeout(() => {
+      popup.classList.add("hidden");
+      window.notas.push(nota);
+      window.pintarNota(nota, window.notas.length - 1);
+      limpiarPopup();
+    }, 300);
+  } else {
+    popupInfo.textContent = "❌ Error al enviar nota";
   }
 });
-
-// Limpiar formulario
-function limpiarPopup() {
-  inputAutor.value = "";
-  inputMensaje.value = "";
-  inputClave.value = "";
-  popupInfo.textContent = "";
-}

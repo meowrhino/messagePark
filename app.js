@@ -13,6 +13,10 @@ async function cargarNotas() {
     const res = await fetch("https://messagepark.onrender.com/mensajes");
     const data = await res.json();
     notas = Array.isArray(data) ? data : data.contenido; // Asegura que notas siempre es un array
+    // 6️⃣ Modo debug: para inspeccionar las notas en DevTools
+    window.pintarNota = pintarNota;
+    window.notas = notas;
+
     dibujarNotas();
   } catch (err) {
     console.error("Error al cargar notas:", err);
@@ -23,18 +27,24 @@ async function cargarNotas() {
 function dibujarNotas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  notas.forEach((nota) => {
+  notas.forEach((nota, i) => {
     const x = nota.x * canvas.width;
     const y = nota.y * canvas.height;
+    const r = 10;
 
     ctx.beginPath();
-    ctx.arc(x, y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = "#FFD700";
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = nota.color || "#FFD700"; // color de nota
     ctx.fill();
 
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#333";
+    ctx.stroke();
+    ctx.closePath();
+
     ctx.fillStyle = "#000";
-    ctx.font = "12px sans-serif";
-    ctx.fillText(nota.autor, x + 12, y + 4);
+    ctx.font = "14px sans-serif";
+    ctx.fillText(i + 1, x + r + 4, y + 5);
   });
 }
 

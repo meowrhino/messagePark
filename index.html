@@ -11,15 +11,16 @@
 <body>
   <canvas id="canvas"></canvas>
 
-  <div id="popup" class="hidden">
-    <h2>escribe</h2>
-    <input type="text" id="autor" placeholder="Tu nombre">
-    <textarea id="mensaje" placeholder="Escribe tu mensaje..."></textarea>
-    <input type="password" id="clave" placeholder="Contraseña">
-    <button id="enviar">Enviar</button>
-    <button id="cerrar">Cancelar</button>
-    <p id="popupInfo"></p>
-  </div>
+<div id="popup" class="hidden">
+  <h2>Escribe tu nota</h2>
+  <input type="text" id="nota-autor" placeholder="Tu nombre">
+  <textarea id="nota-texto" placeholder="Escribe tu mensaje..."></textarea>
+  <!-- Aquí va la paleta de colores: -->
+  <div id="color-palette" class="palette"></div>
+  <button id="nota-enviar">Enviar</button>
+  <button id="nota-cerrar">Cancelar</button>
+  <p id="popupInfo"></p>
+</div>
 
   <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
   <script type="module" src="popup.js"></script>
