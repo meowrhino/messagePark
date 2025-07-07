@@ -14,17 +14,15 @@ const headers = {
 // 📥 Leer contenido de mensajes.json desde el repo
 // 📥 Leer contenido de mensajes.json desde el repo
 async function leerMensajes() {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/server/${path}`, {
+  const res = await fetch("https://api.github.com/repos/meowrhino/messagePark/contents/mensajes.json", {
     headers
   });
 
   if (!res.ok) {
-    throw new Error(`Error al leer ${path}: ${res.statusText}`);
+    throw new Error(`Error al leer mensajes.json: ${res.statusText}`);
   }
 
   const data = await res.json();
-
-  // Decodifica el contenido base64
   const contenido = Buffer.from(data.content, 'base64').toString('utf-8');
 
   return {
@@ -39,7 +37,7 @@ async function guardarMensajes(nuevosMensajes) {
 
   const contenidoNuevo = Buffer.from(JSON.stringify(nuevosMensajes, null, 2)).toString("base64");
 
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+  const res = await fetch("https://api.github.com/repos/meowrhino/messagePark/contents/mensajes.json",  {
     method: "PUT",
     headers,
     body: JSON.stringify({
