@@ -1,28 +1,138 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>✉️🏞️</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MessagePark</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; }
+    body { font-family: system-ui, sans-serif; background:#f5f7fb; overflow:hidden; }
+
+    #toolbar {
+      position: fixed; top: 10px; left: 10px; z-index: 30;
+      display:flex; gap:8px; align-items:center;
+      background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.08);
+    }
+    #toolbar button {
+      padding:6px 10px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; cursor:pointer;
+    }
+    #toolbar button.active { background:#111; color:#fff; border-color:#111; }
+    #status { font-size:12px; color:#666; margin-left:6px; }
+
+    #decor-panel {
+      position: fixed; top: 64px; left: 10px; z-index: 25; width: 320px;
+      display:none; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.08);
+    }
+    #emojiGrid { display:grid; grid-template-columns: repeat(10, 1fr); gap:6px; margin-bottom:8px; }
+    #emojiGrid button {
+      font-size:20px; line-height:1; padding:6px; background:#fff; border:1px solid #e5e7eb; border-radius:8px; cursor:pointer;
+    }
+    #emojiGrid button.active { outline:2px solid #111; }
+    #emojiPreview { font-size:22px; }
+
+    #canvas { width:100vw; height:100vh; display:block; background:#eef2f7; }
+
+    /* Popup genérico */
+    .popup {
+      position: fixed; z-index: 40; width: 340px; background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+      padding:12px; box-shadow: 0 18px 40px rgba(0,0,0,.16); display:none;
+    }
+    .row { margin-bottom:8px; }
+    label { display:block; font-size:12px; color:#555; margin-bottom:4px; }
+    input, textarea {
+      width:100%; padding:8px; border-radius:8px; border:1px solid #e5e7eb; font: inherit; background:#fff;
+    }
+    .actions { display:flex; gap:8px; justify-content:flex-end; }
+    .hint { font-size:12px; color:#666; min-height:1em; }
+
+    /* título bajo el sobre */
+    .note-label { font:12px system-ui; fill:#222; }
+
+  </style>
+
+  <!-- CryptoJS (AES) -->
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+
+  <!-- API local en dev -->
+  <script>
+    window.API_URL = "http://localhost:3000/mensajes";
+  </script>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
-
-  <div id="popup" class="hidden">
-    <h2>escribe</h2>
-    <input type="text" id="autor" placeholder="Tu nombre">
-    <textarea id="mensaje" placeholder="Escribe tu mensaje..."></textarea>
-    <input type="password" id="clave" placeholder="Contraseña">
-    <button id="enviar">Enviar</button>
-    <button id="cerrar">Cancelar</button>
-    <p id="popupInfo"></p>
+  <div id="toolbar">
+    <button id="btn-leer" class="active">Leer</button>
+    <button id="btn-colocar">Colocar nota</button>
+    <button id="btn-decorar">Decorar</button>
+    <span id="status"></span>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
-  <script src="popup.js"></script>
-  <script src="app.js"></script>
+  <div id="decor-panel">
+    <div id="emojiGrid"></div>
+    <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
+      <label for="emojiSize" style="font-size:12px;color:#555;">Tamaño</label>
+      <input id="emojiSize" type="range" min="16" max="128" value="48" step="2" style="flex:1;" />
+      <span id="emojiSizeVal" style="width:32px; text-align:right; font-size:12px; color:#333;">48</span>
+      <span id="emojiPreview" title="previsualización">—</span>
+    </div>
+  </div>
 
-  <button id="modo-toggle">Enviar nota</button>
+  <canvas id="canvas"></canvas>
+
+  <!-- Popup: editor de notas -->
+  <div id="popup-editor" class="popup">
+    <div class="row">
+      <label for="titulo">Título</label>
+      <input id="titulo" placeholder="Un título cortito..." />
+    </div>
+    <div class="row">
+      <label for="autor">Autor</label>
+      <input id="autor" placeholder="Tu nombre o nick..." />
+    </div>
+    <div class="row">
+      <label for="clave">Contraseña</label>
+      <input id="clave" type="password" placeholder="Clave para cifrar/leer" />
+    </div>
+    <div class="row">
+      <label for="mensaje">Mensaje</label>
+      <textarea id="mensaje" rows="4" placeholder="Escribe aquí tu nota..."></textarea>
+    </div>
+    <div class="row" style="display:flex;justify-content:space-between;">
+      <span id="coordsTxt" class="hint"></span>
+      <span id="popupInfo" class="hint"></span>
+    </div>
+    <div class="actions">
+      <button id="descartar">Descartar</button>
+      <button id="guardar">Guardar</button>
+    </div>
+  </div>
+
+  <!-- Popup: pedir contraseña -->
+  <div id="popup-pass" class="popup">
+    <div class="row" id="passTitle" style="font-weight:600;"></div>
+    <div class="row">
+      <label for="passClave">Contraseña</label>
+      <input id="passClave" type="password" placeholder="Introduce la contraseña" />
+    </div>
+    <div class="row"><span id="passInfo" class="hint"></span></div>
+    <div class="actions">
+      <button id="passCancel">Cancelar</button>
+      <button id="passOk">Leer</button>
+    </div>
+  </div>
+
+  <!-- Popup: mensaje descifrado -->
+  <div id="popup-msg" class="popup">
+    <div class="row" id="msgTitle" style="font-weight:600;"></div>
+    <div class="row"><div id="msgMeta" class="hint"></div></div>
+    <div class="row"><div id="msgBody" style="white-space:pre-wrap;"></div></div>
+    <div class="actions">
+      <button id="msgClose">Cerrar</button>
+    </div>
+  </div>
+
+  <script src="./popup.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
