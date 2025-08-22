@@ -1,74 +1,78 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>✉️🌳</title>
 
   <link rel="stylesheet" href="./styles.css" />
-
-  <!-- CryptoJS -->
   <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
-
-  <!-- API local -->
   <script> window.API_URL = "http://localhost:3000/mensajes"; </script>
 </head>
+
 <body>
   <div id="toolbar">
-    <button id="btn-leer" class="btn active">leer</button>
-    <button id="btn-escribir" class="btn">escribir</button>
-    <button id="btn-decorar" class="btn">decorar</button>
+    <button id="btn-leer" class="btn active" type="button">leer</button>
+    <button id="btn-escribir" class="btn" type="button">escribir</button>
+    <button id="btn-decorar" class="btn" type="button">decorar</button>
     <span id="status"></span>
   </div>
 
+  <!-- bottom-sheet decorar -->
   <div id="decor-panel">
-    <div id="emojiGrid"></div>
-    <div class="controls">
+    <div id="emojiRow"></div>
+    <div class="controls vertical">
       <span class="hint">tamaño</span>
       <input id="emojiSize" type="range" min="16" max="128" value="48" step="2" />
       <span id="emojiSizeVal">48</span>
-      <span id="emojiPreview">—</span>
+      <div id="emojiPreviewBig">—</div>
     </div>
   </div>
 
   <canvas id="canvas"></canvas>
 
-  <!-- Popup Escribir (centrado) -->
+  <!-- popup escribir -->
   <div id="popup-editor" class="popup center">
     <div class="row"><input id="titulo" class="input" placeholder="título" /></div>
-    <div class="row"><input id="autor"  class="input" placeholder="remitente" /></div>
-    <div class="row"><input id="clave"  class="input" type="password" placeholder="contraseña" /></div>
+    <div class="row"><input id="autor" class="input" placeholder="remitente" /></div>
+    <div class="row"><input id="clave" class="input" type="password" placeholder="contraseña" /></div>
     <div class="row"><textarea id="mensaje" class="input textarea" placeholder="escribe tu mensaje"></textarea></div>
     <div class="row" style="display:flex;justify-content:space-between;">
       <span id="coordsTxt" class="hint"></span>
       <span id="popupInfo" class="hint"></span>
     </div>
     <div class="actions">
-      <button id="descartar" class="pill">descartar</button>
-      <button id="guardar" class="pill primary">guardar</button>
+      <button id="descartar" class="pill" type="button">descartar</button>
+      <button id="guardar" class="pill primary" type="button">guardar</button>
     </div>
   </div>
 
-  <!-- Popup pedir contraseña (centrado) -->
+  <!-- popup contraseña -->
   <div id="popup-pass" class="popup center">
     <div class="row" id="passTitle" style="font-weight:700;"></div>
-    <div class="row"><input id="passClave" class="input" type="password" placeholder="Contraseña" /></div>
+    <div class="row"><input id="passClave" class="input" type="password" placeholder="contraseña" /></div>
     <div class="row"><span id="passInfo" class="hint"></span></div>
     <div class="actions">
-      <button id="passCancel" class="pill">cancelar</button>
-      <button id="passOk" class="pill primary">leer</button>
+      <button id="passCancel" class="pill" type="button">cancelar</button>
+      <button id="passOk" class="pill primary" type="button">leer</button>
     </div>
   </div>
 
-  <!-- Popup mensaje (centrado) -->
-  <div id="popup-msg" class="popup center">
+  <!-- popup mensaje -->
+  <div id="popup-msg" class="popup">
     <div class="row" id="msgTitle" style="font-weight:700;"></div>
-    <div class="row"><div id="msgMeta" class="hint"></div></div>
-    <div class="row"><div id="msgBody" style="white-space:pre-wrap;"></div></div>
-    <div class="actions"><button id="msgClose" class="pill primary">cerrar</button></div>
+    <div class="row">
+      <div id="msgMeta" class="hint"></div>
+    </div>
+    <div class="row">
+      <div id="msgBody" style="white-space:pre-wrap;"></div>
+    </div>
+    <div class="actions"><button id="msgClose" class="pill primary" type="button">cerrar</button></div>
   </div>
 
   <script src="./popup.js"></script>
   <script src="./app.js"></script>
 </body>
+
 </html>

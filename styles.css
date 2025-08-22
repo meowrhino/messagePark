@@ -1,15 +1,13 @@
-/* styles.css — primavera fresca, sin “form vibes” */
 :root {
   --bg: #f5f7fb;
-  --panel: #ffffff;
+  --panel: #fff;
   --ink: #1f2937;
   --muted: #6b7280;
   --line: #e5e7eb;
-  --accent: #26c6a8; /* verde menta */
-  --accent-2: #ffcb57; /* amarillo suave */
-  --accent-3: #ff7aa2; /* rosa primavera */
+  --accent: #26c6a8;
+  --accent-2: #ffcb57;
+  --accent-3: #ff7aa2;
 }
-
 * {
   box-sizing: border-box;
 }
@@ -25,67 +23,62 @@ body {
   overflow: hidden;
 }
 
-/* Toolbar */
+/* top bar (texto) */
 #toolbar {
   position: fixed;
   z-index: 30;
-  top: 10px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 10px;
+  gap: 16px;
   align-items: center;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  padding: 8px 12px;
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 .btn {
   appearance: none;
-  border: 1px solid var(--line);
-  background: transparent;
-  padding: 6px 12px;
-  border-radius: 10px;
+  background: none;
+  border: none;
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.15s ease;
+  padding: 4px 0;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
 }
 .btn:hover {
-  border-color: var(--accent);
   color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 .btn.active {
-  background: var(--ink);
-  color: #fff;
-  border-color: var(--ink);
+  color: #000;
+  border-bottom-color: #000;
 }
 #status {
   font-size: 12px;
   color: var(--muted);
-  margin-left: 4px;
+  margin-left: 8px;
 }
 
-/* Canvas */
 #canvas {
   width: 100vw;
   height: 100vh;
   display: block;
   background: #eef2f7;
+  touch-action: none;
 }
 
-/* Bottom sheet (decorar) */
+/* bottom-sheet decorar */
 #decor-panel {
   position: fixed;
   z-index: 25;
   left: 50%;
   bottom: 10px;
   transform: translate(-50%, 110%);
-  width: min(680px, 94vw);
+  width: min(700px, 94vw);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 12px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
   transition: transform 0.22s ease;
 }
@@ -93,133 +86,140 @@ body {
   transform: translate(-50%, 0%);
 }
 
-#emojiGrid {
+/* fila horizontal con 5 grupos */
+#emojiRow {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  justify-content: center;
+}
+#emojiRow::-webkit-scrollbar {
+  height: 6px;
+}
+#emojiRow::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.emoji-group {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
 .emoji-btn {
   font-size: 20px;
   line-height: 1;
-  padding: 8px;
-  border-radius: 10px;
+  padding: 10px;
+  border-radius: 12px;
   background: #fff;
   border: 1px solid var(--line);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s ease, transform 0.05s ease;
+  transition: box-shadow 0.1s ease, transform 0.05s ease,
+    border-color 0.15s ease;
+}
+.emoji-btn:hover {
+  border-color: var(--accent);
 }
 .emoji-btn:active {
   transform: scale(0.98);
 }
 .emoji-btn.active {
-  outline: 2px solid var(--ink);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), inset 0 0 0 2px #000;
 }
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
+
+.controls.vertical {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  margin-top: 10px;
 }
 #emojiSize {
-  flex: 1;
+  width: 100%;
   accent-color: var(--accent-2);
 }
 #emojiSizeVal {
-  width: 36px;
-  text-align: right;
-  color: var(--ink);
-  font-weight: 600;
+  color: #111;
+  font-weight: 700;
 }
-#emojiPreview {
-  min-width: 24px;
+#emojiPreviewBig {
+  font-size: 28px;
+  line-height: 1;
 }
 
-/* Popups (modales) */
+/* popups */
 .popup {
   position: fixed;
   z-index: 40;
-  width: min(480px, 92vw);
+  width: min(520px, 92vw);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: 10px;
+  padding: 16px;
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.18);
   display: none;
-}
-.popup.center {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
 }
 .row {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
-
 .input {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
+  padding: 10px 2px;
+  border: none;
+  background: transparent;
   outline: none;
+  border-bottom: 2px solid var(--line);
 }
 .input::placeholder {
   color: #9aa0a6;
 }
 .textarea {
-  min-height: 100px;
+  min-height: 110px;
   resize: vertical;
 }
-
 .actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: flex-end;
 }
-
 .pill {
   appearance: none;
-  border: 1px solid var(--line);
-  background: #fff;
-  padding: 8px 14px;
-  border-radius: 10px;
+  background: none;
+  border: none;
   cursor: pointer;
-  font-weight: 700;
-  transition: all 0.15s ease;
-  min-width: 110px;
+  padding: 6px 2px;
+  font-weight: 800;
+  border-bottom: 2px solid transparent;
 }
 .pill:hover {
-  border-color: var(--accent-3);
   color: var(--accent-3);
+  border-bottom-color: var(--accent-3);
 }
 .pill.primary {
-  background: var(--ink);
-  color: #fff;
-  border-color: var(--ink);
+  color: #000;
+  border-bottom-color: #000;
 }
-.pill.primary:hover {
-  filter: brightness(1.05);
-}
-
 .hint {
   font-size: 12px;
   color: var(--muted);
 }
 
-/* Responsive */
 @media (max-width: 640px) {
   #toolbar {
-    gap: 6px;
-    padding: 6px 8px;
+    gap: 12px;
   }
   .btn {
-    padding: 6px 10px;
-    border-radius: 9px;
-  }
-  #emojiGrid {
-    grid-template-columns: repeat(8, 1fr);
+    padding: 6px 0;
   }
 }

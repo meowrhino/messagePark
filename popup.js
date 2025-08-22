@@ -1,5 +1,3 @@
-// popup.js — editor centrado (placeholders), botones tipo “pill”
-
 (() => {
   const popup = document.getElementById("popup-editor");
   const inTitulo = document.getElementById("titulo");
@@ -11,29 +9,18 @@
   const btnGuardar = document.getElementById("guardar");
   const btnDesc = document.getElementById("descartar");
 
-  let coords = { x: 0, y: 0 }; // 0..1
+  let coords = { x: 0, y: 0 };
 
-  function limpiar() {
-    inTitulo.value = "";
-    inAutor.value = "";
-    inClave.value = "";
-    inMensaje.value = "";
-    coords = { x: 0, y: 0 };
-    coordsTxt.textContent = "";
-    info.textContent = "";
-  }
-
-  // llamado por app.js
   window.abrirEditorAt = (nx, ny) => {
     coords = { x: nx, y: ny };
     coordsTxt.textContent = `x=${nx.toFixed(4)}  y=${ny.toFixed(4)}`;
     popup.style.display = "block";
     inTitulo.focus();
   };
-
   btnDesc.addEventListener("click", () => {
     popup.style.display = "none";
-    limpiar();
+    inTitulo.value = inAutor.value = inClave.value = inMensaje.value = "";
+    info.textContent = "";
   });
 
   btnGuardar.addEventListener("click", async () => {
@@ -42,10 +29,9 @@
       clave = inClave.value,
       msg = inMensaje.value.trim();
     if (!titulo || !autor || !clave || !msg) {
-      info.textContent = "Completa todos los campos.";
+      info.textContent = "completa todos los campos.";
       return;
     }
-
     const ciphertext = CryptoJS.AES.encrypt(msg, clave).toString();
     const nota = {
       tipo: "nota",
@@ -57,20 +43,31 @@
       ts: Date.now(),
     };
 
-    info.textContent = "⏳ Guardando...";
+    info.textContent = "⏳ guardando...";
     btnGuardar.disabled = true;
     try {
-      if (typeof window._guardarNota !== "function")
-        throw new Error("bridge no disponible");
-      await window._guardarNota(nota);
-      info.textContent = "✅ Guardado";
+      if (typeof window._guardarNota === "function") {
+        await window._guardarNota(nota);
+      } else {
+        // fallback directo al API
+        const API_URL = window.API_URL || "http://localhost:3000/mensajes";
+        const r = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(nota),
+          mode: "cors",
+        });
+        if (!r.ok) throw new Error("post " + r.status);
+      }
+      info.textContent = "✅ guardado";
       setTimeout(() => {
         popup.style.display = "none";
-        limpiar();
+        inTitulo.value = inAutor.value = inClave.value = inMensaje.value = "";
+        info.textContent = "";
       }, 350);
-    } catch (err) {
-      console.error(err);
-      info.textContent = "❌ Error al guardar";
+    } catch (e) {
+      console.error(e);
+      info.textContent = "❌ error al guardar";
     } finally {
       btnGuardar.disabled = false;
     }

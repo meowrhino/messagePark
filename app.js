@@ -1,9 +1,10 @@
-// app.js — mundo x10, scroll+drag, modos: Leer / Escribir / Decorar, arranque centrado
+// app.js — leer | escribir | decorar
+// mundo x10, orografía visible, viento en el mundo (ráfagas), responsive y UI en minúsculas
 
 (() => {
   const API_URL = window.API_URL || "http://localhost:3000/mensajes";
 
-  // ---- Mundo/Vista ----
+  // --- mundo/viewport ---
   const WORLD_SCALE = 10;
   let worldW = 0,
     worldH = 0;
@@ -18,47 +19,31 @@
   const btnDecorar = document.getElementById("btn-decorar");
   const statusEl = document.getElementById("status");
   const decorPanel = document.getElementById("decor-panel");
-  const emojiGrid = document.getElementById("emojiGrid");
+  const emojiRow = document.getElementById("emojiRow");
   const emojiSize = document.getElementById("emojiSize");
   const emojiSizeVal = document.getElementById("emojiSizeVal");
-  const emojiPreview = document.getElementById("emojiPreview");
+  const emojiPreviewBig = document.getElementById("emojiPreviewBig");
 
   // datos
   let notas = [];
   let decoraciones = [];
 
-  // 20 emojis fijos
-  const EMOJIS = [
-    "🌳",
-    "🌲",
-    "🌴",
-    "🪾",
-    "⛰️",
-    "🏔️",
-    "🌋",
-    "🗻",
-    "🐇",
-    "🐈‍⬛",
-    "🦔",
-    "🐁",
-    "🌼",
-    "🌸",
-    "🌻",
-    "🌺",
-    "⛩️",
-    "⛲",
-    "⛺",
-    "🚗",
+  const GROUPS = [
+    ["🌳", "🌲", "🌴", "🪾"],
+    ["⛰️", "🏔️", "🌋", "🗻"],
+    ["🐇", "🐈‍⬛", "🦔", "🐁"],
+    ["🌼", "🌸", "🌻", "🌺"],
+    ["⛩️", "⛲", "⛺", "🚗"],
   ];
   let activeEmoji = null;
 
-  // pan/scroll
-  let isPanning = false;
+  // --- input ---
+  let pointerActive = false,
+    isPanning = false,
+    touchMoved = false;
   let panStart = { x: 0, y: 0 },
     viewStart = { x: 0, y: 0 };
-  let touchMoved = false;
 
-  // HiDPI + centro
   function resizeCanvas() {
     const dpr = Math.max(1, window.devicePixelRatio || 1);
     const w = window.innerWidth,
@@ -68,28 +53,29 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     canvas.style.width = w + "px";
     canvas.style.height = h + "px";
+    markBgDirty();
   }
   function initWorldIfNeeded() {
     if (!worldW || !worldH) {
       worldW = Math.round(window.innerWidth * WORLD_SCALE);
       worldH = Math.round(window.innerHeight * WORLD_SCALE);
-      const rect = canvas.getBoundingClientRect();
-      view.x = Math.max(0, (worldW - rect.width) / 2);
-      view.y = Math.max(0, (worldH - rect.height) / 2);
+      const r = canvas.getBoundingClientRect();
+      view.x = Math.max(0, (worldW - r.width) / 2);
+      view.y = Math.max(0, (worldH - r.height) / 2);
+      markBgDirty();
     }
   }
 
-  // coords
   const screenToWorld = (x, y) => ({ x: view.x + x, y: view.y + y });
   const worldToScreen = (x, y) => ({ x: x - view.x, y: y - view.y });
   const normFromWorld = (x, y) => ({ x: x / worldW, y: y / worldH });
   const worldFromNorm = (nx, ny) => ({ x: nx * worldW, y: ny * worldH });
 
-  // datos
+  // --- storage ---
   async function cargarDatos() {
     try {
       const r = await fetch(API_URL, { mode: "cors" });
-      if (!r.ok) throw new Error("GET " + r.status);
+      if (!r.ok) throw new Error("get " + r.status);
       const arr = await r.json();
       notas = [];
       decoraciones = [];
@@ -99,8 +85,8 @@
           (it.ciphertext ? "nota" : it.emoji ? "decoracion" : "nota");
         (tipo === "nota" ? notas : decoraciones).push(it);
       }
-      dibujar();
-    } catch (e) {
+      needItemsRedraw = true;
+    } catch {
       try {
         const r = await fetch("./mensajes.json");
         const arr = await r.json();
@@ -111,11 +97,11 @@
           (x) =>
             (x.tipo || (x.ciphertext ? "nota" : "decoracion")) === "decoracion"
         );
-        dibujar();
-      } catch (_) {
+        needItemsRedraw = true;
+      } catch {
         notas = [];
         decoraciones = [];
-        dibujar(true);
+        needItemsRedraw = true;
       }
     }
   }
@@ -127,7 +113,7 @@
         body: JSON.stringify(item),
         mode: "cors",
       });
-      if (!r.ok) throw new Error("POST " + r.status);
+      if (!r.ok) throw new Error("post " + r.status);
       return r.json().catch(() => ({}));
     } catch (e) {
       if (retries > 0) {
@@ -138,44 +124,178 @@
     }
   }
 
-  // dibujo
-  function clear() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.strokeStyle = "rgba(0,0,0,.06)";
-    const step = 100;
-    for (let x = -(view.x % step); x < canvas.width; x += step) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
+  // --- fondo: orografía ---
+  const bg = document.createElement("canvas");
+  const bgCtx = bg.getContext("2d", { willReadFrequently: true });
+  let bgDirty = true;
+  function markBgDirty() {
+    bgDirty = true;
+  }
+  const SEED = 1337;
+  function rnd(i, j) {
+    const s = Math.sin(i * 127.1 + j * 311.7 + SEED) * 43758.5453;
+    return s - Math.floor(s);
+  }
+  const smooth = (t) => t * t * (3 - 2 * t);
+  function valueNoise(x, y) {
+    const x0 = Math.floor(x),
+      y0 = Math.floor(y);
+    const xf = x - x0,
+      yf = y - y0;
+    const v00 = rnd(x0, y0),
+      v10 = rnd(x0 + 1, y0),
+      v01 = rnd(x0, y0 + 1),
+      v11 = rnd(x0 + 1, y0 + 1);
+    const u = smooth(xf),
+      v = smooth(yf);
+    const a = v00 * (1 - u) + v10 * u;
+    const b = v01 * (1 - u) + v11 * u;
+    return a * (1 - v) + b * v;
+  }
+  function fbm(x, y) {
+    let f = 0,
+      amp = 0.5,
+      freq = 1;
+    for (let o = 0; o < 4; o++) {
+      f += amp * valueNoise(x * freq, y * freq);
+      amp *= 0.5;
+      freq *= 2;
     }
-    for (let y = -(view.y % step); y < canvas.height; y += step) {
+    return f;
+  }
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+  const LOW = [0xe9, 0xff, 0xf5],
+    HIGH = [0xe8, 0xf0, 0xff],
+    PEAK = [0xff, 0xff, 0xff];
+  const ORO_SCALE = 220,
+    ORO_OFFSET = 0.28,
+    ORO_RANGE = 0.55,
+    ORO_GAMMA = 0.85,
+    PEAK_START = 0.66,
+    PEAK_RANGE = 0.24;
+
+  function redrawBackground() {
+    const W = canvas.width,
+      H = canvas.height,
+      s = 0.5;
+    const w = Math.max(2, Math.round(W * s)),
+      h = Math.max(2, Math.round(H * s));
+    if (bg.width !== w || bg.height !== h) {
+      bg.width = w;
+      bg.height = h;
+    }
+    const img = bgCtx.createImageData(w, h),
+      data = img.data;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const wx = view.x + x * (W / w),
+          wy = view.y + y * (H / h);
+        const n = fbm(wx / ORO_SCALE, wy / ORO_SCALE);
+        let t = (n - ORO_OFFSET) / ORO_RANGE;
+        t = Math.max(0, Math.min(1, t));
+        t = Math.pow(t, ORO_GAMMA);
+        let m = (n - PEAK_START) / PEAK_RANGE;
+        m = Math.max(0, Math.min(1, m));
+        const r = Math.round(lerp(LOW[0], HIGH[0], t) * (1 - m) + PEAK[0] * m);
+        const g = Math.round(lerp(LOW[1], HIGH[1], t) * (1 - m) + PEAK[1] * m);
+        const b = Math.round(lerp(LOW[2], HIGH[2], t) * (1 - m) + PEAK[2] * m);
+        const i = (y * w + x) * 4;
+        data[i] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+        data[i + 3] = 255;
+      }
+    }
+    bgCtx.putImageData(img, 0, 0);
+    bgDirty = false;
+  }
+
+  // --- viento en coordenadas de mundo ---
+  const gusts = [];
+  let lastTime = performance.now();
+  function fieldAngleWorld(xw, yw, t) {
+    const n = fbm((xw + t * 40) / 1200, (yw - t * 30) / 1200); // mundo → 0..1
+    return (n * 2 - 1) * Math.PI; // -PI..PI
+  }
+  function spawnGust() {
+    const max = Math.max(
+      8,
+      Math.round((canvas.width * canvas.height) / 150000)
+    );
+    if (gusts.length > max) return;
+    gusts.push({
+      xw: view.x + Math.random() * canvas.width,
+      yw: view.y + Math.random() * canvas.height,
+      life: 0,
+      maxLife: 1.2 + Math.random() * 1.6,
+      path: [], // puntos en mundo
+    });
+  }
+  function updateGusts(dt, now) {
+    if (Math.random() < 0.25) spawnGust();
+    const t = now / 1000;
+    const speed = 140; // px/s en mundo
+    const xMin = view.x - 200,
+      xMax = view.x + canvas.width + 200;
+    const yMin = view.y - 200,
+      yMax = view.y + canvas.height + 200;
+
+    for (let i = gusts.length - 1; i >= 0; i--) {
+      const g = gusts[i];
+      g.life += dt;
+      const a = fieldAngleWorld(g.xw, g.yw, t);
+      g.xw += Math.cos(a) * speed * dt;
+      g.yw += Math.sin(a) * speed * dt;
+
+      if (g.xw < xMin || g.xw > xMax || g.yw < yMin || g.yw > yMax) {
+        gusts.splice(i, 1);
+        continue;
+      }
+
+      g.path.push({ xw: g.xw, yw: g.yw });
+      if (g.path.length > 30) g.path.shift();
+      if (g.life >= g.maxLife) gusts.splice(i, 1);
+    }
+  }
+  function drawGusts() {
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (const g of gusts) {
+      const k = Math.max(0, 1 - g.life / g.maxLife);
+      ctx.strokeStyle = `rgba(0,0,0,${0.18 * k})`;
+      ctx.lineWidth = 1 + 0.6 * k;
       ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
+      for (let i = 0; i < g.path.length; i++) {
+        const p = g.path[i];
+        const s = worldToScreen(p.xw, p.yw);
+        if (i === 0) ctx.moveTo(s.x, s.y);
+        else ctx.lineTo(s.x, s.y);
+      }
       ctx.stroke();
     }
     ctx.restore();
   }
+
+  // --- items ---
   function drawEnvelope(x, y) {
     ctx.font =
-      "20px system-ui, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji";
+      "20px system-ui, apple color emoji, segoe ui emoji, noto color emoji";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("✉️", x, y);
   }
-  function dibujar(showMsg = false) {
-    clear();
-    if (showMsg) {
-      ctx.fillStyle = "#777";
-      ctx.font = "14px system-ui";
-      ctx.fillText("Sin datos. Toca/clic para añadir.", 16, 28);
-    }
-    // decoraciones
+
+  function drawAll() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+    drawGusts();
+
     for (const d of decoraciones) {
-      const W = worldFromNorm(d.x, d.y);
-      const S = worldToScreen(W.x, W.y);
+      const W = worldFromNorm(d.x, d.y),
+        S = worldToScreen(W.x, W.y);
       if (
         S.x < -200 ||
         S.y < -200 ||
@@ -186,16 +306,15 @@
       ctx.save();
       ctx.font = `${
         d.size || 48
-      }px system-ui, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji`;
+      }px system-ui, apple color emoji, segoe ui emoji, noto color emoji`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(d.emoji || "❔", S.x, S.y);
       ctx.restore();
     }
-    // notas
     for (const n of notas) {
-      const W = worldFromNorm(n.x, n.y);
-      const S = worldToScreen(W.x, W.y);
+      const W = worldFromNorm(n.x, n.y),
+        S = worldToScreen(W.x, W.y);
       if (
         S.x < -60 ||
         S.y < -60 ||
@@ -215,52 +334,23 @@
     )} — mundo ${worldW}×${worldH}`;
   }
 
-  // modos
-  let modo = "leer"; // leer|escribir|decorar
-  function setModo(m) {
-    // si pulsas el mismo modo => volver a leer
-    if (modo === m) {
-      m = "leer";
-    }
-    modo = m;
-    btnLeer.classList.toggle("active", modo === "leer");
-    btnEscribir.classList.toggle("active", modo === "escribir");
-    btnDecorar.classList.toggle("active", modo === "decorar");
-    decorPanel.classList.toggle("open", modo === "decorar");
-    document.body.style.cursor = modo === "escribir" ? "crosshair" : "default";
-  }
-  function buildEmojiGrid() {
-    emojiGrid.innerHTML = "";
-    EMOJIS.forEach((e) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "emoji-btn";
-      b.textContent = e;
-      b.addEventListener("click", () => {
-        [...emojiGrid.children].forEach((x) => x.classList.remove("active"));
-        b.classList.add("active");
-        activeEmoji = e;
-        emojiPreview.textContent = e;
-        emojiPreview.style.fontSize = `${emojiSize.value}px`;
-      });
-      emojiGrid.appendChild(b);
-    });
-    emojiPreview.textContent = "—";
+  // --- animación ---
+  let needItemsRedraw = true;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+    if (bgDirty) redrawBackground();
+    updateGusts(dt, now);
+    drawAll(); // viento es animación continua
+    requestAnimationFrame(frame);
   }
 
-  // popups util
-  function centerPopup(el) {
-    el.style.display = "block"; /* ya centrado por CSS */
-  }
-  function closePopup(el) {
-    el.style.display = "none";
-  }
-
-  // interacción canvas
+  // --- interacción canvas ---
   function onPointerDown(ev) {
-    const rect = canvas.getBoundingClientRect();
-    const sx = ev.clientX - rect.left,
-      sy = ev.clientY - rect.top;
+    pointerActive = true;
+    const r = canvas.getBoundingClientRect();
+    const sx = ev.clientX - r.left,
+      sy = ev.clientY - r.top;
     touchMoved = false;
     isPanning = true;
     panStart = { x: sx, y: sy };
@@ -268,36 +358,36 @@
     canvas.setPointerCapture?.(ev.pointerId);
   }
   function onPointerMove(ev) {
-    if (!isPanning) return;
-    const rect = canvas.getBoundingClientRect();
-    const sx = ev.clientX - rect.left,
-      sy = ev.clientY - rect.top;
+    if (!pointerActive || !isPanning) return;
+    const r = canvas.getBoundingClientRect();
+    const sx = ev.clientX - r.left,
+      sy = ev.clientY - r.top;
     const dx = sx - panStart.x,
       dy = sy - panStart.y;
     if (Math.hypot(dx, dy) > 8) touchMoved = true;
-    view.x = Math.max(0, Math.min(worldW - rect.width, viewStart.x - dx));
-    view.y = Math.max(0, Math.min(worldH - rect.height, viewStart.y - dy));
-    dibujar();
+    view.x = Math.max(0, Math.min(worldW - r.width, viewStart.x - dx));
+    view.y = Math.max(0, Math.min(worldH - r.height, viewStart.y - dy));
+    markBgDirty();
   }
   function onPointerUp(ev) {
-    const rect = canvas.getBoundingClientRect();
-    const sx = ev.clientX - rect.left,
-      sy = ev.clientY - rect.top;
+    if (!pointerActive) return;
+    pointerActive = false;
+    const r = canvas.getBoundingClientRect();
+    const sx = ev.clientX - r.left,
+      sy = ev.clientY - r.top;
     isPanning = false;
     canvas.releasePointerCapture?.(ev.pointerId);
 
-    // tap (sin arrastre) => acción de modo
     if (!touchMoved) {
       const W = screenToWorld(sx, sy),
         N = normFromWorld(W.x, W.y);
-
       if (modo === "escribir") {
         window.abrirEditorAt(N.x, N.y);
         return;
       }
       if (modo === "decorar") {
         if (!activeEmoji) {
-          statusEl.textContent = "Elige un emoji";
+          statusEl.textContent = "elige un emoji";
           return;
         }
         const deco = {
@@ -312,11 +402,10 @@
           .then(cargarDatos)
           .catch((err) => {
             console.error(err);
-            statusEl.textContent = "Error guardando decoración";
+            statusEl.textContent = "error guardando decoración";
           });
         return;
       }
-      // leer: hit-test nota
       const hit = notas.find((n) => {
         const p = worldFromNorm(n.x, n.y),
           s = worldToScreen(p.x, p.y);
@@ -326,35 +415,64 @@
     }
   }
   function onWheel(ev) {
+    if (ev.target !== canvas) return;
     ev.preventDefault();
-    const rect = canvas.getBoundingClientRect(),
+    const r = canvas.getBoundingClientRect(),
       K = 1;
-    view.x = Math.max(0, Math.min(worldW - rect.width, view.x + ev.deltaX * K));
-    view.y = Math.max(
-      0,
-      Math.min(worldH - rect.height, view.y + ev.deltaY * K)
-    );
-    dibujar();
+    view.x = Math.max(0, Math.min(worldW - r.width, view.x + ev.deltaX * K));
+    view.y = Math.max(0, Math.min(worldH - r.height, view.y + ev.deltaY * K));
+    markBgDirty();
   }
 
-  // botones
+  // --- modos ---
+  let modo = "leer";
+  function setModo(m) {
+    if (modo === m) m = "leer";
+    modo = m;
+    btnLeer.classList.toggle("active", modo === "leer");
+    btnEscribir.classList.toggle("active", modo === "escribir");
+    btnDecorar.classList.toggle("active", modo === "decorar");
+    decorPanel.classList.toggle("open", modo === "decorar");
+    document.body.style.cursor = modo === "escribir" ? "crosshair" : "default";
+  }
   btnLeer.addEventListener("click", () => setModo("leer"));
   btnEscribir.addEventListener("click", () => setModo("escribir"));
   btnDecorar.addEventListener("click", () => setModo("decorar"));
+
+  // --- UI emojis por grupos (fila horizontal) ---
+  function buildEmojiRow() {
+    emojiRow.innerHTML = "";
+    GROUPS.forEach((group) => {
+      const wrap = document.createElement("div");
+      wrap.className = "emoji-group";
+      group.forEach((e) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "emoji-btn";
+        b.textContent = e;
+        b.addEventListener("click", () => {
+          [...emojiRow.querySelectorAll(".emoji-btn")].forEach((x) =>
+            x.classList.remove("active")
+          );
+          b.classList.add("active");
+          activeEmoji = e;
+          emojiPreviewBig.textContent = e;
+          emojiPreviewBig.style.fontSize = `${emojiSize.value}px`;
+        });
+        wrap.appendChild(b);
+      });
+      emojiRow.appendChild(wrap);
+    });
+    emojiPreviewBig.textContent = "—";
+  }
   emojiSize.addEventListener("input", () => {
     emojiSizeVal.textContent = emojiSize.value;
     if (activeEmoji) {
-      emojiPreview.style.fontSize = `${emojiSize.value}px`;
+      emojiPreviewBig.style.fontSize = `${emojiSize.value}px`;
     }
   });
 
-  // canvas events
-  canvas.addEventListener("pointerdown", onPointerDown);
-  window.addEventListener("pointermove", onPointerMove);
-  window.addEventListener("pointerup", onPointerUp);
-  canvas.addEventListener("wheel", onWheel, { passive: false });
-
-  // lectura
+  // --- lectura popups ---
   const passPopup = document.getElementById("popup-pass");
   const passTitle = document.getElementById("passTitle");
   const passClave = document.getElementById("passClave");
@@ -371,56 +489,66 @@
   let currentNote = null;
   function abrirLectura(nota) {
     currentNote = nota;
-    passTitle.textContent = `✉️ ${nota.titulo || "Nota"}`;
+    passTitle.textContent = `✉️ ${nota.titulo || "nota"}`;
     passClave.value = "";
     passInfo.textContent = "";
-    centerPopup(passPopup);
+    passPopup.style.display = "block";
     passClave.focus();
   }
-  passCancel.addEventListener("click", () => closePopup(passPopup));
+  passCancel.addEventListener("click", () => {
+    passPopup.style.display = "none";
+  });
   passOk.addEventListener("click", () => {
     const clave = passClave.value;
     if (!clave) {
-      passInfo.textContent = "Escribe la contraseña";
+      passInfo.textContent = "escribe la contraseña";
       return;
     }
     try {
       const bytes = CryptoJS.AES.decrypt(currentNote.ciphertext, clave);
       const texto = bytes.toString(CryptoJS.enc.Utf8);
       if (!texto) {
-        passInfo.textContent = "Contraseña equivocada";
+        passInfo.textContent = "contraseña equivocada";
         return;
       }
-      closePopup(passPopup);
-      msgTitle.textContent = `✉️ ${currentNote.titulo || "Nota"}`;
-      msgMeta.textContent = `por ${currentNote.autor || "—"} — ${new Date(
+      passPopup.style.display = "none";
+      msgTitle.textContent = `✉️ ${currentNote.titulo || "nota"}`;
+      msgMeta.textContent = `de ${currentNote.autor || "—"} — ${new Date(
         currentNote.ts || Date.now()
       ).toLocaleString()}`;
       msgBody.textContent = texto;
-      centerPopup(msgPopup);
+      msgPopup.style.display = "block";
     } catch {
-      passInfo.textContent = "Contraseña equivocada";
+      passInfo.textContent = "contraseña equivocada";
     }
   });
-  msgClose.addEventListener("click", () => closePopup(msgPopup));
+  msgClose.addEventListener("click", () => {
+    msgPopup.style.display = "none";
+  });
 
-  // puente para popup editor
+  // puente para popup.js
   window._guardarNota = async (nota) => {
     await guardarItem(nota);
     await cargarDatos();
   };
 
+  // eventos
+  canvas.addEventListener("pointerdown", onPointerDown);
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("wheel", onWheel, { passive: false });
+
   // init
   function init() {
     resizeCanvas();
     initWorldIfNeeded();
-    buildEmojiGrid();
+    buildEmojiRow();
     setModo("leer");
     cargarDatos();
+    requestAnimationFrame(frame);
   }
   window.addEventListener("resize", () => {
     resizeCanvas();
-    dibujar();
   });
   init();
 })();
