@@ -1,43 +1,41 @@
-# 🗺️ MessagePark — Espacio de notas cifradas
+# 🎨 MessagePark
 
-MessagePark es una web interactiva donde puedes dejar mensajes secretos cifrados en un lienzo virtual 10× más grande que tu pantalla. Las notas se cifran completamente en tu navegador (Zero Knowledge) y se colocan donde estés scrolleando. Nadie puede leerlas sin la contraseña.
-
----
-
-## 🌐 Demo (cuando lo subas)
-👉 [messagepark.netlify.app](https://messagepark.netlify.app) (o el dominio de GitHub Pages)
+MessagePark es un pequeño **muro colaborativo** donde cualquiera puede dejar notas cifradas o decoraciones con emojis sobre un fondo compartido.  
+El frontend vive en **GitHub Pages** y el backend en **Render**, con almacenamiento en disco y copia automática en este repositorio (`mensajes.json`).
 
 ---
 
-## ✨ Funcionalidades
+## 🚀 Cómo funciona
 
-- Lienzo infinito (1000vw × 1000vh)
-- Notas flotantes visibles solo con contraseña
-- Cifrado en el navegador (AES-GCM + PBKDF2)
-- Backend persistente con SQLite
-- Navegación libre con scroll, flechas y móvil
-- Despliegue fácil con Render
+- **Frontend** → desplegado en GitHub Pages:  
+  [https://meowrhino.github.io/messagePark](https://meowrhino.github.io/messagePark)
 
----
+- **Backend** → API Node.js/Express en Render:  
+  `https://messagepark.onrender.com`
 
-## 🧠 Tecnologías usadas
-
-- HTML + CSS + JS (Frontend sin framework)
-- Express.js (servidor)
-- SQLite3 (base de datos local)
-- `crypto.subtle` Web API para cifrado
-- Despliegue: GitHub Pages (frontend) + Render (backend)
+- **Datos** → se guardan en un archivo `mensajes.json` en el servidor de Render.  
+  Con cada inserción se hace *mirror* opcional a este repositorio (si está configurado `GITHUB_TOKEN`).
 
 ---
 
-## 🚀 Cómo desplegar
+## 📦 Endpoints de la API
 
-### 🔧 Requisitos
-- Node.js ≥ 16
-- Cuenta de [GitHub](https://github.com/) y [Render](https://render.com)
+- `GET /healthz` → comprueba que el servidor está vivo (`ok`).  
+- `GET /mensajes` → devuelve todos los mensajes actuales en JSON.  
+- `POST /mensajes` → añade un mensaje (nota o emoji).  
+- `POST /sync-github` → fuerza la sincronización manual de los mensajes a GitHub.
 
-### 1. Clona este repositorio
+---
+
+## 📝 Añadir un mensaje (ejemplo con curl)
 
 ```bash
-git clone https://github.com/tuusuario/messagepark.git
-cd messagepark
+# Decoración (emoji)
+curl -X POST https://messagepark.onrender.com/mensajes \
+  -H "Content-Type: application/json" \
+  -d '{"tipo":"decoracion","emoji":"🌼","size":90,"x":0.5,"y":0.5,"ts":1755886814156}'
+
+# Nota cifrada
+curl -X POST https://messagepark.onrender.com/mensajes \
+  -H "Content-Type: application/json" \
+  -d '{"tipo":"nota","titulo":"hello","autor":"manu","ciphertext":"...texto cifrado...","x":0.5,"y":0.53}'
