@@ -39,5 +39,14 @@
     "x": 0.4994272055946792,
     "y": 0.5373104109432234,
     "ts": 1755886867647
+  },
+  {
+    "tipo": "nota",
+    "titulo": "test",
+    "autor": "test",
+    "ciphertext": "U2FsdGVkX1/XiYbeO8mrOm2JfGTTZvc4c4fdbGqpx1s=",
+    "x": 0.0034510135135135136,
+    "y": 0.9939574748168498,
+    "ts": 1755888156459
   }
 ]
