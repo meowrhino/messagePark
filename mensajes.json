@@ -30,5 +30,14 @@
     "x": 0.49889108959311423,
     "y": 0.49810625572344325,
     "ts": 1755886821220
+  },
+  {
+    "tipo": "nota",
+    "titulo": "welcome",
+    "autor": "manu",
+    "ciphertext": "U2FsdGVkX18rWpXh/8Mns4NTEGoFfCXml4OfYGZp3dzWWuVc8aLcV5M4uhuLL3PTAb+QWMpQj5ZPFCXmL/rFL4cUMD75rzzT6lnDbpY2w9RHROrRkHXz+yEt8QT3aleyCQjckz5fY1KK39Hdc9E3NQ==",
+    "x": 0.4994272055946792,
+    "y": 0.5373104109432234,
+    "ts": 1755886867647
   }
 ]
