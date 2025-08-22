@@ -4,6 +4,7 @@ const cors = require("cors");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
+const https = require("https");
 
 // --- config ---
 const PORT = process.env.PORT || 3000;
@@ -73,6 +74,74 @@ async function writeAll(arr) {
   await fsp.rename(tmp, DB_FILE); // rename en mismo FS es atómico
 }
 
+// ---------------- GitHub mirror helpers ----------------
+// Env defaults: only GITHUB_TOKEN is required; the rest have sensible defaults.
+const GH_TOKEN  = process.env.GITHUB_TOKEN || null;          // required to enable mirror
+const GH_REPO   = process.env.GITHUB_REPO  || "meowrhino/messagePark";
+const GH_BRANCH = process.env.GITHUB_BRANCH|| "main";
+const GH_PATH   = process.env.GITHUB_PATH  || "mensajes.json";
+
+function githubRequest(method, url, body){
+  return new Promise((resolve, reject)=>{
+    const req = https.request(url, {
+      method,
+      headers: {
+        "User-Agent": "messagepark",
+        "Accept": "application/vnd.github+json",
+        ...(GH_TOKEN ? { "Authorization": `Bearer ${GH_TOKEN}` } : {}),
+        ...(body ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } : {})
+      }
+    }, res=>{
+      let data = "";
+      res.on("data", d => data += d);
+      res.on("end", ()=>{
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve({ status: res.statusCode, json: data ? JSON.parse(data) : {} });
+        } else {
+          reject(new Error(`GitHub ${method} ${res.statusCode}: ${data}`));
+        }
+      });
+    });
+    req.on("error", reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+async function getGithubFileSha(){
+  const url = `https://api.github.com/repos/${GH_REPO}/contents/${encodeURIComponent(GH_PATH)}?ref=${encodeURIComponent(GH_BRANCH)}`;
+  try{
+    const { json } = await githubRequest("GET", url);
+    return json.sha || null;
+  }catch(e){
+    // 404 → no existe; en ese caso devolvemos null
+    if (String(e.message).includes(" 404:")) return null;
+    throw e;
+  }
+}
+
+async function putGithubFile(contentObj, commitMessage){
+  if (!GH_TOKEN) return; // mirror desactivado si no hay token
+  const sha = await getGithubFileSha(); // puede ser null si el archivo no existe aún
+  const contentBase64 = Buffer.from(JSON.stringify(contentObj, null, 2), "utf8").toString("base64");
+  const url = `https://api.github.com/repos/${GH_REPO}/contents/${encodeURIComponent(GH_PATH)}`;
+  const body = JSON.stringify({
+    message: commitMessage || "sync: actualizar mensajes.json",
+    content: contentBase64,
+    branch: GH_BRANCH,
+    ...(sha ? { sha } : {})
+  });
+  await githubRequest("PUT", url, body);
+}
+
+async function mirrorToGithubIfConfigured(arr){
+  try{
+    await putGithubFile(arr, "sync: actualizar mensajes.json");
+  }catch(e){
+    console.warn("[GitHub mirror] fallo:", e.message);
+  }
+}
+
 // ---------------- rutas api ----------------
 app.get("/healthz", (_req, res) => res.type("text").send("ok"));
 
@@ -115,10 +184,34 @@ app.post("/mensajes", async (req, res) => {
     const arr = await readAll();
     arr.push(b);
     await writeAll(arr);
+    // espejo opcional a GitHub si hay token
+    await mirrorToGithubIfConfigured(arr);
     res.status(201).json({ ok: true, count: arr.length });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "error escribiendo mensajes.json" });
+  }
+});
+
+// Forzar sincronización manual del archivo actual a GitHub (POST /sync-github)
+app.post("/sync-github", async (_req, res) => {
+  try{
+    const arr = await readAll();
+    await mirrorToGithubIfConfigured(arr);
+    res.json({ ok: true, count: arr.length });
+  }catch(e){
+    res.status(500).json({ error: "error en sincronización con GitHub" });
+  }
+});
+
+// Variante GET para probar desde el navegador (GET /sync-github)
+app.get("/sync-github", async (_req, res) => {
+  try{
+    const arr = await readAll();
+    await mirrorToGithubIfConfigured(arr);
+    res.json({ ok: true, count: arr.length });
+  }catch(e){
+    res.status(500).json({ error: "error en sincronización con GitHub" });
   }
 });
 
