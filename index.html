@@ -6,9 +6,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>✉️🌳</title>
 
+  <!-- favicon inline para evitar 404 -->
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext x='6' y='52' font-size='48'%3E✉️%3C/text%3E%3C/svg%3E">
+
   <link rel="stylesheet" href="./styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
-  <script> window.API_URL = "http://localhost:3000/mensajes"; </script>
 </head>
 
 <body>
@@ -19,9 +22,14 @@
     <span id="status"></span>
   </div>
 
-  <!-- bottom-sheet decorar -->
+  <!-- panel decorar: soporta UI nueva (fila por grupos) y la antigua (grid) -->
   <div id="decor-panel">
+    <!-- UI nueva (fila horizontal de 5 grupos) -->
     <div id="emojiRow"></div>
+
+    <!-- UI antigua (por si la usas aún) -->
+    <div id="emojiGrid" style="display:none;"></div>
+
     <div class="controls vertical">
       <span class="hint">tamaño</span>
       <input id="emojiSize" type="range" min="16" max="128" value="48" step="2" />
@@ -70,6 +78,21 @@
     </div>
     <div class="actions"><button id="msgClose" class="pill primary" type="button">cerrar</button></div>
   </div>
+
+  <!-- API_URL autodetect (local / github pages / mismo origen) -->
+  <script>
+    (function () {
+      const host = location.hostname;
+      if (host === "localhost" || host === "127.0.0.1") {
+        window.API_URL = "http://localhost:3000/mensajes";
+      } else if (host.endsWith("github.io")) {
+        // ⬇️ cambia TU-SERVICIO por tu subdominio real de Render
+        window.API_URL = "https://TU-SERVICIO.onrender.com/mensajes";
+      } else {
+        window.API_URL = "/mensajes";
+      }
+    })();
+  </script>
 
   <script src="./popup.js"></script>
   <script src="./app.js"></script>
