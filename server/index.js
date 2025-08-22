@@ -23,7 +23,7 @@ const app = express();
 app.use(
   cors({
     origin(origin, cb) {
-      if (!origin) return cb(null, true);
+      if (!origin) return cb(null, true); // same-origin/healthz/curl
       if (origin === "https://meowrhino.github.io") return cb(null, true);
       if (origin.endsWith(".onrender.com")) return cb(null, true);
       return cb(null, false);
@@ -33,6 +33,7 @@ app.use(
     maxAge: 86400,
   })
 );
+
 app.options("*", cors()); // responde preflight
 
 app.use(express.json({ limit: "128kb" }));
