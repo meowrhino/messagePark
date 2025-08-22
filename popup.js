@@ -1,4 +1,4 @@
-// popup.js — editor de notas (título, autor, clave, mensaje, coords)
+// popup.js — editor centrado (placeholders), botones tipo “pill”
 
 (() => {
   const popup = document.getElementById("popup-editor");
@@ -9,9 +9,9 @@
   const coordsTxt = document.getElementById("coordsTxt");
   const info = document.getElementById("popupInfo");
   const btnGuardar = document.getElementById("guardar");
-  const btnDescartar = document.getElementById("descartar");
+  const btnDesc = document.getElementById("descartar");
 
-  let coords = { x: 0, y: 0 };  // normalizadas 0..1
+  let coords = { x: 0, y: 0 }; // 0..1
 
   function limpiar() {
     inTitulo.value = "";
@@ -23,59 +23,51 @@
     info.textContent = "";
   }
 
-  // clamp y colocación del popup en pantalla (con medida real)
-  function placePopup(el, sx, sy) {
-    el.style.display = "block";
-    const rect = el.getBoundingClientRect();
-    const w = rect.width, h = rect.height;
-    const left = Math.min(window.innerWidth - w - 10, Math.max(10, sx));
-    const top  = Math.min(window.innerHeight - h - 10, Math.max(10, sy));
-    el.style.left = `${left}px`;
-    el.style.top  = `${top}px`;
-  }
-
-  // llamada desde app.js
-  window.abrirEditorAt = (nx, ny, screenX=40, screenY=40, placer) => {
+  // llamado por app.js
+  window.abrirEditorAt = (nx, ny) => {
     coords = { x: nx, y: ny };
     coordsTxt.textContent = `x=${nx.toFixed(4)}  y=${ny.toFixed(4)}`;
-    (placer || placePopup)(popup, screenX, screenY);
+    popup.style.display = "block";
+    inTitulo.focus();
   };
 
-  btnDescartar.addEventListener("click", () => {
+  btnDesc.addEventListener("click", () => {
     popup.style.display = "none";
     limpiar();
   });
 
   btnGuardar.addEventListener("click", async () => {
-    const titulo = inTitulo.value.trim();
-    const autor  = inAutor.value.trim();
-    const clave  = inClave.value;
-    const msg    = inMensaje.value.trim();
-
+    const titulo = inTitulo.value.trim(),
+      autor = inAutor.value.trim(),
+      clave = inClave.value,
+      msg = inMensaje.value.trim();
     if (!titulo || !autor || !clave || !msg) {
       info.textContent = "Completa todos los campos.";
       return;
     }
 
     const ciphertext = CryptoJS.AES.encrypt(msg, clave).toString();
-
     const nota = {
       tipo: "nota",
-      titulo, autor, ciphertext,
-      x: Number(coords.x), y: Number(coords.y),
-      ts: Date.now()
+      titulo,
+      autor,
+      ciphertext,
+      x: coords.x,
+      y: coords.y,
+      ts: Date.now(),
     };
 
     info.textContent = "⏳ Guardando...";
     btnGuardar.disabled = true;
     try {
-      if (typeof window._guardarNota !== "function") throw new Error("bridge no disponible");
+      if (typeof window._guardarNota !== "function")
+        throw new Error("bridge no disponible");
       await window._guardarNota(nota);
       info.textContent = "✅ Guardado";
       setTimeout(() => {
         popup.style.display = "none";
         limpiar();
-      }, 400);
+      }, 350);
     } catch (err) {
       console.error(err);
       info.textContent = "❌ Error al guardar";

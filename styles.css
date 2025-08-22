@@ -1,35 +1,225 @@
-/*POPUP*/
-
-#popup {
-  position: absolute;
-  background: black;
-  color: white;
-  padding: 1em;
-  border-radius: 8px;
-  z-index: 1000;
-  width: 300px;
-  max-width: 90vw;
+/* styles.css — primavera fresca, sin “form vibes” */
+:root {
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #26c6a8; /* verde menta */
+  --accent-2: #ffcb57; /* amarillo suave */
+  --accent-3: #ff7aa2; /* rosa primavera */
 }
 
-.hidden {
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Toolbar */
+#toolbar {
+  position: fixed;
+  z-index: 30;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+.btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+#status {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+/* Canvas */
+#canvas {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  background: #eef2f7;
+}
+
+/* Bottom sheet (decorar) */
+#decor-panel {
+  position: fixed;
+  z-index: 25;
+  left: 50%;
+  bottom: 10px;
+  transform: translate(-50%, 110%);
+  width: min(680px, 94vw);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+  transition: transform 0.22s ease;
+}
+#decor-panel.open {
+  transform: translate(-50%, 0%);
+}
+
+#emojiGrid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+}
+.emoji-btn {
+  font-size: 20px;
+  line-height: 1;
+  padding: 8px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, transform 0.05s ease;
+}
+.emoji-btn:active {
+  transform: scale(0.98);
+}
+.emoji-btn.active {
+  outline: 2px solid var(--ink);
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+#emojiSize {
+  flex: 1;
+  accent-color: var(--accent-2);
+}
+#emojiSizeVal {
+  width: 36px;
+  text-align: right;
+  color: var(--ink);
+  font-weight: 600;
+}
+#emojiPreview {
+  min-width: 24px;
+}
+
+/* Popups (modales) */
+.popup {
+  position: fixed;
+  z-index: 40;
+  width: min(480px, 92vw);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.18);
   display: none;
 }
-
-#popup input,
-#popup textarea {
-  width: 90%;
-  margin-bottom: 0.5em;
+.popup.center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.row {
+  margin-bottom: 10px;
 }
 
-#modo-toggle {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  padding: 0.8rem 1.4rem;
-  background: black;
-  color: white;
-  border-radius: 8px;
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  outline: none;
+}
+.input::placeholder {
+  color: #9aa0a6;
+}
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.pill {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 8px 14px;
+  border-radius: 10px;
   cursor: pointer;
-  border: none;
-  z-index: 1000;
+  font-weight: 700;
+  transition: all 0.15s ease;
+  min-width: 110px;
+}
+.pill:hover {
+  border-color: var(--accent-3);
+  color: var(--accent-3);
+}
+.pill.primary {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.pill.primary:hover {
+  filter: brightness(1.05);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  #toolbar {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+  .btn {
+    padding: 6px 10px;
+    border-radius: 9px;
+  }
+  #emojiGrid {
+    grid-template-columns: repeat(8, 1fr);
+  }
 }

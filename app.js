@@ -1,19 +1,20 @@
-// app.js — mundo x10, scroll/pan, modos: leer / colocar / decorar
+// app.js — mundo x10, scroll+drag, modos: Leer / Escribir / Decorar, arranque centrado
 
 (() => {
   const API_URL = window.API_URL || "http://localhost:3000/mensajes";
 
-  // ---------- Mundo y vista ----------
+  // ---- Mundo/Vista ----
   const WORLD_SCALE = 10;
-  let worldW = 0, worldH = 0;
-  let view = { x: 0, y: 0 };           // offset del viewport dentro del mundo
+  let worldW = 0,
+    worldH = 0;
+  let view = { x: 0, y: 0 };
 
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
 
   // UI
   const btnLeer = document.getElementById("btn-leer");
-  const btnColocar = document.getElementById("btn-colocar");
+  const btnEscribir = document.getElementById("btn-escribir");
   const btnDecorar = document.getElementById("btn-decorar");
   const statusEl = document.getElementById("status");
   const decorPanel = document.getElementById("decor-panel");
@@ -23,337 +24,393 @@
   const emojiPreview = document.getElementById("emojiPreview");
 
   // datos
-  let notas = [];        // {tipo:'nota', titulo, autor, ciphertext, x,y, ts}
-  let decoraciones = []; // {tipo:'decoracion', emoji, size, x,y, ts}
+  let notas = [];
+  let decoraciones = [];
 
-  // emojis (20 exactos, respetando ZWJ)
+  // 20 emojis fijos
   const EMOJIS = [
-    "🌳","🌲","🌴","🪾",
-    "⛰️","🏔️","🌋","🗻",
-    "🐇","🐈‍⬛","🦔","🐁",
-    "🌼","🌸","🌻","🌺",
-    "⛩️","⛲","⛺","🚗"
+    "🌳",
+    "🌲",
+    "🌴",
+    "🪾",
+    "⛰️",
+    "🏔️",
+    "🌋",
+    "🗻",
+    "🐇",
+    "🐈‍⬛",
+    "🦔",
+    "🐁",
+    "🌼",
+    "🌸",
+    "🌻",
+    "🌺",
+    "⛩️",
+    "⛲",
+    "⛺",
+    "🚗",
   ];
   let activeEmoji = null;
 
-  // Pan con espacio o con scroll
-  let isSpace = false;
+  // pan/scroll
   let isPanning = false;
-  let panStart = { x:0, y:0 }, viewStart = { x:0, y:0 };
+  let panStart = { x: 0, y: 0 },
+    viewStart = { x: 0, y: 0 };
+  let touchMoved = false;
 
-  // ---------- Canvas HiDPI ----------
+  // HiDPI + centro
   function resizeCanvas() {
     const dpr = Math.max(1, window.devicePixelRatio || 1);
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = window.innerWidth,
+      h = window.innerHeight;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     canvas.style.width = w + "px";
     canvas.style.height = h + "px";
   }
-
   function initWorldIfNeeded() {
-    if (worldW === 0 || worldH === 0) {
+    if (!worldW || !worldH) {
       worldW = Math.round(window.innerWidth * WORLD_SCALE);
       worldH = Math.round(window.innerHeight * WORLD_SCALE);
-      view.x = 0; view.y = 0;
+      const rect = canvas.getBoundingClientRect();
+      view.x = Math.max(0, (worldW - rect.width) / 2);
+      view.y = Math.max(0, (worldH - rect.height) / 2);
     }
   }
 
-  // ---------- Coords ----------
-  function screenToWorld(x, y) { return { x: view.x + x, y: view.y + y }; }
-  function worldToScreen(x, y) { return { x: x - view.x, y: y - view.y }; }
-  function normFromWorld(x, y) { return { x: x / worldW, y: y / worldH }; }
-  function worldFromNorm(nx, ny) { return { x: nx * worldW, y: ny * worldH }; }
+  // coords
+  const screenToWorld = (x, y) => ({ x: view.x + x, y: view.y + y });
+  const worldToScreen = (x, y) => ({ x: x - view.x, y: y - view.y });
+  const normFromWorld = (x, y) => ({ x: x / worldW, y: y / worldH });
+  const worldFromNorm = (nx, ny) => ({ x: nx * worldW, y: ny * worldH });
 
-  // ---------- Data I/O ----------
+  // datos
   async function cargarDatos() {
     try {
-      const res = await fetch(API_URL, { mode: "cors" });
-      if (!res.ok) throw new Error("GET " + res.status);
-      const arr = await res.json();
+      const r = await fetch(API_URL, { mode: "cors" });
+      if (!r.ok) throw new Error("GET " + r.status);
+      const arr = await r.json();
       notas = [];
       decoraciones = [];
       for (const it of arr) {
-        const tipo = it.tipo || (it.ciphertext ? "nota" : it.emoji ? "decoracion" : "nota");
-        if (tipo === "nota") notas.push(it);
-        else decoraciones.push(it);
+        const tipo =
+          it.tipo ||
+          (it.ciphertext ? "nota" : it.emoji ? "decoracion" : "nota");
+        (tipo === "nota" ? notas : decoraciones).push(it);
       }
       dibujar();
-    } catch (err) {
-      console.warn("GET falló, fallback a local mensajes.json", err);
+    } catch (e) {
       try {
-        const res = await fetch("./mensajes.json");
-        const arr = await res.json();
-        notas = arr.filter(x => (x.tipo || (x.ciphertext ? "nota" : "decoracion")) === "nota");
-        decoraciones = arr.filter(x => (x.tipo || (x.ciphertext ? "nota" : "decoracion")) === "decoracion");
+        const r = await fetch("./mensajes.json");
+        const arr = await r.json();
+        notas = arr.filter(
+          (x) => (x.tipo || (x.ciphertext ? "nota" : "decoracion")) === "nota"
+        );
+        decoraciones = arr.filter(
+          (x) =>
+            (x.tipo || (x.ciphertext ? "nota" : "decoracion")) === "decoracion"
+        );
         dibujar();
-      } catch (e2) {
-        console.error("Sin datos", e2);
-        notas = []; decoraciones = [];
+      } catch (_) {
+        notas = [];
+        decoraciones = [];
         dibujar(true);
       }
     }
   }
-
-  async function guardarItem(item, retries=1) {
+  async function guardarItem(item, retries = 1) {
     try {
-      const res = await fetch(API_URL, {
+      const r = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(item),
-        mode: "cors"
+        mode: "cors",
       });
-      if (!res.ok) throw new Error("POST " + res.status);
-      return await res.json().catch(() => ({}));
+      if (!r.ok) throw new Error("POST " + r.status);
+      return r.json().catch(() => ({}));
     } catch (e) {
       if (retries > 0) {
-        await new Promise(r => setTimeout(r, 300));
-        return guardarItem(item, retries-1);
+        await new Promise((r) => setTimeout(r, 250));
+        return guardarItem(item, retries - 1);
       }
       throw e;
     }
   }
 
-  // ---------- Dibujo ----------
+  // dibujo
   function clear() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // grid
     ctx.save();
-    ctx.strokeStyle = "rgba(0,0,0,0.06)";
+    ctx.strokeStyle = "rgba(0,0,0,.06)";
     const step = 100;
     for (let x = -(view.x % step); x < canvas.width; x += step) {
-      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
     }
     for (let y = -(view.y % step); y < canvas.height; y += step) {
-      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
     }
     ctx.restore();
   }
-
   function drawEnvelope(x, y) {
-    // dibuja un ✉️ centrado en (x,y)
-    ctx.font = "20px system-ui, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji";
-    ctx.textBaseline = "middle"; ctx.textAlign = "center";
+    ctx.font =
+      "20px system-ui, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.fillText("✉️", x, y);
   }
-
-  function dibujar(showMsg=false) {
+  function dibujar(showMsg = false) {
     clear();
     if (showMsg) {
-      ctx.fillStyle="#777"; ctx.font="14px system-ui";
-      ctx.fillText("Sin datos. Haz clic para añadir.", 16, 28);
+      ctx.fillStyle = "#777";
+      ctx.font = "14px system-ui";
+      ctx.fillText("Sin datos. Toca/clic para añadir.", 16, 28);
     }
-
     // decoraciones
     for (const d of decoraciones) {
       const W = worldFromNorm(d.x, d.y);
       const S = worldToScreen(W.x, W.y);
-      if (S.x < -200 || S.y < -200 || S.x > canvas.width+200 || S.y > canvas.height+200) continue;
+      if (
+        S.x < -200 ||
+        S.y < -200 ||
+        S.x > canvas.width + 200 ||
+        S.y > canvas.height + 200
+      )
+        continue;
       ctx.save();
-      ctx.font = `${d.size || 48}px system-ui, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji`;
-      ctx.textBaseline = "middle"; ctx.textAlign = "center";
+      ctx.font = `${
+        d.size || 48
+      }px system-ui, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillText(d.emoji || "❔", S.x, S.y);
       ctx.restore();
     }
-
     // notas
     for (const n of notas) {
       const W = worldFromNorm(n.x, n.y);
       const S = worldToScreen(W.x, W.y);
-      if (S.x < -60 || S.y < -60 || S.x > canvas.width+60 || S.y > canvas.height+60) continue;
+      if (
+        S.x < -60 ||
+        S.y < -60 ||
+        S.x > canvas.width + 60 ||
+        S.y > canvas.height + 60
+      )
+        continue;
       drawEnvelope(S.x, S.y);
-      ctx.fillStyle="#222";
-      ctx.font="12px system-ui";
-      ctx.textBaseline="top"; ctx.textAlign="center";
-      const label = n.titulo ? n.titulo : (n.autor || "nota");
-      ctx.fillText(label, S.x, S.y + 14);
+      ctx.fillStyle = "#222";
+      ctx.font = "12px system-ui";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(n.titulo || n.autor || "nota", S.x, S.y + 14);
     }
-
-    statusEl.textContent = `vista ${Math.round(view.x)}/${Math.round(view.y)} — mundo ${worldW}×${worldH}`;
+    statusEl.textContent = `vista ${Math.round(view.x)}/${Math.round(
+      view.y
+    )} — mundo ${worldW}×${worldH}`;
   }
 
-  // ---------- Modos ----------
-  let modo = "leer"; // "leer" | "colocar" | "decorar"
-
+  // modos
+  let modo = "leer"; // leer|escribir|decorar
   function setModo(m) {
+    // si pulsas el mismo modo => volver a leer
+    if (modo === m) {
+      m = "leer";
+    }
     modo = m;
-    btnLeer.classList.toggle("active", modo==="leer");
-    btnColocar.classList.toggle("active", modo==="colocar");
-    btnDecorar.classList.toggle("active", modo==="decorar");
-    decorPanel.style.display = (modo==="decorar") ? "block" : "none";
-    document.body.style.cursor = (modo==="colocar") ? "crosshair" : "default";
+    btnLeer.classList.toggle("active", modo === "leer");
+    btnEscribir.classList.toggle("active", modo === "escribir");
+    btnDecorar.classList.toggle("active", modo === "decorar");
+    decorPanel.classList.toggle("open", modo === "decorar");
+    document.body.style.cursor = modo === "escribir" ? "crosshair" : "default";
   }
-
   function buildEmojiGrid() {
     emojiGrid.innerHTML = "";
     EMOJIS.forEach((e) => {
       const b = document.createElement("button");
       b.type = "button";
+      b.className = "emoji-btn";
       b.textContent = e;
       b.addEventListener("click", () => {
-        [...emojiGrid.children].forEach(x=>x.classList.remove("active"));
+        [...emojiGrid.children].forEach((x) => x.classList.remove("active"));
         b.classList.add("active");
         activeEmoji = e;
         emojiPreview.textContent = e;
+        emojiPreview.style.fontSize = `${emojiSize.value}px`;
       });
       emojiGrid.appendChild(b);
     });
     emojiPreview.textContent = "—";
   }
 
-  // ---------- Interacción canvas ----------
-  function placePopup(el, sx, sy) {
-    // mostrar temporalmente para medir
-    el.style.display = "block";
-    const rect = el.getBoundingClientRect();
-    const w = rect.width, h = rect.height;
-    const left = Math.min(window.innerWidth - w - 10, Math.max(10, sx));
-    const top  = Math.min(window.innerHeight - h - 10, Math.max(10, sy));
-    el.style.left = `${left}px`;
-    el.style.top  = `${top}px`;
+  // popups util
+  function centerPopup(el) {
+    el.style.display = "block"; /* ya centrado por CSS */
+  }
+  function closePopup(el) {
+    el.style.display = "none";
   }
 
+  // interacción canvas
   function onPointerDown(ev) {
     const rect = canvas.getBoundingClientRect();
-    const sx = ev.clientX - rect.left;
-    const sy = ev.clientY - rect.top;
-
-    if (isSpace) { // iniciar pan con espacio
-      isPanning = true;
-      panStart = { x: sx, y: sy };
-      viewStart = { x: view.x, y: view.y };
-      return;
-    }
-
-    const W = screenToWorld(sx, sy);
-    const N = normFromWorld(W.x, W.y);
-
-    if (modo === "colocar") {
-      // abrir editor
-      window.abrirEditorAt(N.x, N.y, sx + 14, sy + 14, placePopup);
-      return;
-    }
-
-    if (modo === "decorar") {
-      if (!activeEmoji) { statusEl.textContent = "Elige un emoji primero"; return; }
-      const deco = {
-        tipo: "decoracion",
-        emoji: activeEmoji,
-        size: Number(emojiSize.value) || 48,
-        x: Number(N.x), y: Number(N.y),
-        ts: Date.now()
-      };
-      guardarItem(deco).then(async () => {
-        await cargarDatos();
-      }).catch(err => {
-        console.error(err);
-        statusEl.textContent = "Error guardando decoración";
-      });
-      return;
-    }
-
-    // modo leer: ¿clic cerca de una nota?
-    const hit = notas.find((n) => {
-      const p = worldFromNorm(n.x, n.y);
-      const s = worldToScreen(p.x, p.y);
-      return Math.hypot(s.x - sx, s.y - sy) < 16;
-    });
-    if (hit) abrirLectura(hit, sx + 14, sy + 14);
+    const sx = ev.clientX - rect.left,
+      sy = ev.clientY - rect.top;
+    touchMoved = false;
+    isPanning = true;
+    panStart = { x: sx, y: sy };
+    viewStart = { x: view.x, y: view.y };
+    canvas.setPointerCapture?.(ev.pointerId);
   }
-
   function onPointerMove(ev) {
     if (!isPanning) return;
     const rect = canvas.getBoundingClientRect();
-    const sx = ev.clientX - rect.left;
-    const sy = ev.clientY - rect.top;
-    const dx = sx - panStart.x;
-    const dy = sy - panStart.y;
+    const sx = ev.clientX - rect.left,
+      sy = ev.clientY - rect.top;
+    const dx = sx - panStart.x,
+      dy = sy - panStart.y;
+    if (Math.hypot(dx, dy) > 8) touchMoved = true;
     view.x = Math.max(0, Math.min(worldW - rect.width, viewStart.x - dx));
     view.y = Math.max(0, Math.min(worldH - rect.height, viewStart.y - dy));
     dibujar();
   }
-  function onPointerUp() { isPanning = false; }
+  function onPointerUp(ev) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = ev.clientX - rect.left,
+      sy = ev.clientY - rect.top;
+    isPanning = false;
+    canvas.releasePointerCapture?.(ev.pointerId);
 
-  // scroll/trackpad para pan
+    // tap (sin arrastre) => acción de modo
+    if (!touchMoved) {
+      const W = screenToWorld(sx, sy),
+        N = normFromWorld(W.x, W.y);
+
+      if (modo === "escribir") {
+        window.abrirEditorAt(N.x, N.y);
+        return;
+      }
+      if (modo === "decorar") {
+        if (!activeEmoji) {
+          statusEl.textContent = "Elige un emoji";
+          return;
+        }
+        const deco = {
+          tipo: "decoracion",
+          emoji: activeEmoji,
+          size: Number(emojiSize.value) || 48,
+          x: N.x,
+          y: N.y,
+          ts: Date.now(),
+        };
+        guardarItem(deco)
+          .then(cargarDatos)
+          .catch((err) => {
+            console.error(err);
+            statusEl.textContent = "Error guardando decoración";
+          });
+        return;
+      }
+      // leer: hit-test nota
+      const hit = notas.find((n) => {
+        const p = worldFromNorm(n.x, n.y),
+          s = worldToScreen(p.x, p.y);
+        return Math.hypot(s.x - sx, s.y - sy) < 16;
+      });
+      if (hit) abrirLectura(hit);
+    }
+  }
   function onWheel(ev) {
     ev.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const K = 1; // factor
+    const rect = canvas.getBoundingClientRect(),
+      K = 1;
     view.x = Math.max(0, Math.min(worldW - rect.width, view.x + ev.deltaX * K));
-    view.y = Math.max(0, Math.min(worldH - rect.height, view.y + ev.deltaY * K));
+    view.y = Math.max(
+      0,
+      Math.min(worldH - rect.height, view.y + ev.deltaY * K)
+    );
     dibujar();
   }
 
-  // teclado
-  window.addEventListener("keydown", (e) => { if (e.code === "Space") { isSpace = true; document.body.style.cursor = "grab"; }});
-  window.addEventListener("keyup",   (e) => { if (e.code === "Space") { isSpace = false; document.body.style.cursor = (modo==="colocar"?"crosshair":"default"); }});
-
-  // botones de modo
+  // botones
   btnLeer.addEventListener("click", () => setModo("leer"));
-  btnColocar.addEventListener("click", () => setModo("colocar"));
+  btnEscribir.addEventListener("click", () => setModo("escribir"));
   btnDecorar.addEventListener("click", () => setModo("decorar"));
-  emojiSize.addEventListener("input", () => { emojiSizeVal.textContent = emojiSize.value; if (activeEmoji) emojiPreview.textContent = activeEmoji; });
+  emojiSize.addEventListener("input", () => {
+    emojiSizeVal.textContent = emojiSize.value;
+    if (activeEmoji) {
+      emojiPreview.style.fontSize = `${emojiSize.value}px`;
+    }
+  });
 
-  // canvas
+  // canvas events
   canvas.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointermove", onPointerMove);
   window.addEventListener("pointerup", onPointerUp);
   canvas.addEventListener("wheel", onWheel, { passive: false });
 
-  // ---------- Lectura de notas ----------
+  // lectura
   const passPopup = document.getElementById("popup-pass");
   const passTitle = document.getElementById("passTitle");
   const passClave = document.getElementById("passClave");
-  const passInfo  = document.getElementById("passInfo");
+  const passInfo = document.getElementById("passInfo");
   const passCancel = document.getElementById("passCancel");
-  const passOk     = document.getElementById("passOk");
+  const passOk = document.getElementById("passOk");
 
-  const msgPopup  = document.getElementById("popup-msg");
-  const msgTitle  = document.getElementById("msgTitle");
-  const msgMeta   = document.getElementById("msgMeta");
-  const msgBody   = document.getElementById("msgBody");
-  const msgClose  = document.getElementById("msgClose");
+  const msgPopup = document.getElementById("popup-msg");
+  const msgTitle = document.getElementById("msgTitle");
+  const msgMeta = document.getElementById("msgMeta");
+  const msgBody = document.getElementById("msgBody");
+  const msgClose = document.getElementById("msgClose");
 
   let currentNote = null;
-
-  function abrirLectura(nota, sx, sy) {
+  function abrirLectura(nota) {
     currentNote = nota;
     passTitle.textContent = `✉️ ${nota.titulo || "Nota"}`;
     passClave.value = "";
     passInfo.textContent = "";
-    placePopup(passPopup, sx, sy);
+    centerPopup(passPopup);
     passClave.focus();
   }
-
-  passCancel.addEventListener("click", () => { passPopup.style.display = "none"; passInfo.textContent=""; });
+  passCancel.addEventListener("click", () => closePopup(passPopup));
   passOk.addEventListener("click", () => {
     const clave = passClave.value;
-    if (!clave) { passInfo.textContent = "Escribe la contraseña"; return; }
+    if (!clave) {
+      passInfo.textContent = "Escribe la contraseña";
+      return;
+    }
     try {
       const bytes = CryptoJS.AES.decrypt(currentNote.ciphertext, clave);
       const texto = bytes.toString(CryptoJS.enc.Utf8);
-      if (!texto) { passInfo.textContent = "Contraseña equivocada"; return; }
-      // ok
-      passPopup.style.display = "none";
+      if (!texto) {
+        passInfo.textContent = "Contraseña equivocada";
+        return;
+      }
+      closePopup(passPopup);
       msgTitle.textContent = `✉️ ${currentNote.titulo || "Nota"}`;
-      msgMeta.textContent  = `por ${currentNote.autor || "—"} — ${new Date(currentNote.ts || Date.now()).toLocaleString()}`;
-      msgBody.textContent  = texto; // textContent para evitar HTML
-      placePopup(msgPopup, parseInt(passPopup.style.left||"40",10), parseInt(passPopup.style.top||"40",10));
-    } catch (e) {
+      msgMeta.textContent = `por ${currentNote.autor || "—"} — ${new Date(
+        currentNote.ts || Date.now()
+      ).toLocaleString()}`;
+      msgBody.textContent = texto;
+      centerPopup(msgPopup);
+    } catch {
       passInfo.textContent = "Contraseña equivocada";
     }
   });
-  msgClose.addEventListener("click", () => { msgPopup.style.display = "none"; });
+  msgClose.addEventListener("click", () => closePopup(msgPopup));
 
-  // ---------- Puente para editor (popup.js) ----------
+  // puente para popup editor
   window._guardarNota = async (nota) => {
     await guardarItem(nota);
     await cargarDatos();
   };
 
-  // lifecycle
+  // init
   function init() {
     resizeCanvas();
     initWorldIfNeeded();
@@ -361,6 +418,9 @@
     setModo("leer");
     cargarDatos();
   }
-  window.addEventListener("resize", () => { resizeCanvas(); dibujar(); });
+  window.addEventListener("resize", () => {
+    resizeCanvas();
+    dibujar();
+  });
   init();
 })();
