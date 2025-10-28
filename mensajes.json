@@ -64,5 +64,14 @@
     "x": 0.4917673716012085,
     "y": 0.45704057279236276,
     "ts": 1761645474367
+  },
+  {
+    "tipo": "nota",
+    "titulo": "El cielo está azul",
+    "autor": "Bel",
+    "ciphertext": "U2FsdGVkX1+HXDWk5z7rrvQlxqvUm7NmMpkyUNyRd08YUGkbyPNY2RCHhSc76nmv+ZwithgJQinqvQq4QQ4gz64LTwsoFPFbaj2xuVROy2K5ezwBRZFRa/EysLnJ/at6Z69UbzJ5sCLlPtWjIlH/9rsDFTtNx5cu/4CxPOkLW7t6aFLT7tUkRsVE2JWmVnSX/kaylcGiNEDG1IDDoAzGVQZje5VEJ8Lf548QAhUuweKyngqYJn1nEJNCekhPkfufF78TWny4UQeiZELeC3IT8Fjb3H2lx6F3XeFIM/se3QAxdVnavKNdVmPHOZ4sJLHn",
+    "x": 0.4990181268882175,
+    "y": 0.5394988066825775,
+    "ts": 1761645617505
   }
 ]
