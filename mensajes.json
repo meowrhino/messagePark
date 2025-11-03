@@ -574,17 +574,8 @@
     "tipo": "decoracion",
     "emoji": "🌸",
     "size": 128,
-    "x": 0.49515625,
-    "y": 0.9091917591125198,
-    "ts": 1762163898728
-  },
-  {
-    "tipo": "nota",
-    "titulo": "asco",
-    "autor": "esto da un poco de asco esto que he dibujado",
-    "ciphertext": "U2FsdGVkX1/bKeWzqC6RJdCD+lVzZw6/8LC+2DbHxAq1Guh32PZf9GH1Jh20vleCaZInn8HyVNUnwXa6GZMPwg==",
-    "x": 0.466953125,
-    "y": 0.9394611727416798,
-    "ts": 1762163943586
+    "x": 0.47234375,
+    "y": 0.09878504854374566,
+    "ts": 1762163982551
   }
 ]
